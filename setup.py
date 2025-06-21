@@ -1,11 +1,11 @@
 from setuptools import setup
 
 setup(
-    name = 'pycli',
+    name = 'slabcli',
     version = '0.1.0',
-    packages = ['pycli'],
+    packages = ['slabcli'],
     entry_points = {
         'console_scripts': [
-            'pycli = pycli.__main__:main'
+            'slabcli = slabcli.__main__:main'
         ]
     })
