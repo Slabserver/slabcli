@@ -7,7 +7,6 @@ DEFAULT_CONFIG_PATH = Path("config.yml")
 def load_config():
     with open("config.yml", "r") as f:
         config = yaml.safe_load(f)
-        # print(config["replacements"])  # This should work if config is a dict
         return config
     
 def compute_config_replacements(source_cfg, target_cfg):

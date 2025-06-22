@@ -12,10 +12,14 @@ def run(args):
     if args.direction == "up":
         servers = prod_servers
         replacements = config.compute_config_replacements(staging_cfg, prod_cfg)
-    if args.direction == "down":
+    elif args.direction == "down":
         servers = staging_servers
         replacements = config.compute_config_replacements(prod_cfg, staging_cfg)
+    else:
+        raise ValueError(f"Unknown direction: {args.direction}")
     print("Derived replacements dict:", replacements)
+    print("args.direction =", args.direction)
+    print("servers =", servers)
 
     print("Updating config files...")
     count = 0
