@@ -23,9 +23,9 @@ def run(args):
 
     print("Updating config files...")
     count = 0
-    for key in servers:
-        for root, dirs, files in os.walk("/srv/daemon-data/" + servers[key]):
-            print("checking server: " + servers[key]) 
+    for s in servers:
+        for root, dirs, files in os.walk("/srv/daemon-data/" + servers[s]):
+            print("checking server: " + servers[s]) 
             for filename in files:
                 if filename.endswith(".yml") or filename.endswith(".conf") or filename.endswith(".txt"):
                     path = os.path.join(root, filename)
