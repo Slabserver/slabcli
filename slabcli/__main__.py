@@ -5,7 +5,7 @@ from slabcli import push, pull
 def main():
     # Create the parser
     parser = argparse.ArgumentParser(
-        prog='slabserver',
+        prog='slabcli',
         description='Slabserver CLI for managing server state',
     )
 
