@@ -2,6 +2,7 @@ import os
 import shutil
 from slabcli import config
 
+
 def run(args):
     # Load config (from fixed location)
     cfg = config.load_config()
@@ -37,25 +38,27 @@ def run(args):
             print(f"Skipping {name}, no matching destination.")
             continue
 
-        for root, dirs, files in os.walk(src_root):
-            rel_path = os.path.relpath(root, src_root)
-            dst_path = os.path.join(dst_root, rel_path)
+        if args.dry_run:
+            print(f"[DRY RUN] Would copy {src_root} -> {dst_root}")
+        else:
+            for root, dirs, files in os.walk(src_root):
+                rel_path = os.path.relpath(root, src_root)
+                dst_path = os.path.join(dst_root, rel_path)
 
-            os.makedirs(dst_path, exist_ok=True)
+                os.makedirs(dst_path, exist_ok=True)
 
-            for file in files:
-                src_file = os.path.join(root, file)
-                dst_file = os.path.join(dst_path, file)
-                if args.dry_run:
-                    print(f"[DRY RUN] Would copy {src_file} -> {dst_file}")
-                # else:
-                #     print(f"Copying {src_file} -> {dst_file}")
-                #     shutil.copy2(src_file, dst_file)
+                for file in files:
+                    src_file = os.path.join(root, file)
+                    dst_file = os.path.join(dst_path, file)
+
+                    print(f"Copying {src_file} -> {dst_file}")
+                    print(f"[DEVNOTE] Copying disabled during dev")
+                    # shutil.copy2(src_file, dst_file)
 
     print("Updating config files...")
     count = 0
     for s in dest_servers:
-        print("checking server: " + dest_servers[s]) 
+        print("checking server: " + dest_servers[s])
         for root, dirs, files in os.walk("/srv/daemon-data/" + dest_servers[s]):
             for filename in files:
                 if filename.endswith((".yml", ".conf", ".txt")):
@@ -68,11 +71,11 @@ def run(args):
                         new_content = new_content.replace(key, replacements[key])
 
                     if new_content != content:
-                        print(path)
                         if args.dry_run:
-                            print(f"[DRY RUN] Would write new content to {filename}")
-                        # else:
-                        #     print(f"Writing new content to {filename}")
+                            print(f"[DRY RUN] Would write new content to {path}")
+                        else:
+                            print(f"Writing new content to {filename}")
+                            print(f"[DEVNOTE] Writing disabled during dev")
                         #     with open(path, "w") as f:
                         #         f.write(new_content)
                         count += 1
