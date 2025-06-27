@@ -1,11 +1,11 @@
 import os
 import yaml
-from pathlib import Path
+from importlib.resources import files
 
-DEFAULT_CONFIG_PATH = Path("slabcli/config.yml")
+config_path = files("slabcli").joinpath("config.yml")
 
 def load_config():
-    with open(DEFAULT_CONFIG_PATH, "r") as f:
+    with config_path.open("r") as f:
         config = yaml.safe_load(f)
         return config
     
