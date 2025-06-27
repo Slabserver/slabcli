@@ -15,21 +15,25 @@ def run(args):
     if args.direction == "up":
         source_servers = staging_servers
         dest_servers = prod_servers
-        replacements = config.compute_config_replacements(prod_cfg, staging_cfg)
+        replacements, missingKeys = config.compute_config_replacements(prod_cfg, staging_cfg)
     elif args.direction == "down":
         source_servers = prod_servers
         dest_servers = staging_servers
-        replacements = config.compute_config_replacements(staging_cfg, prod_cfg)
+        replacements, missingKeys = config.compute_config_replacements(staging_cfg, prod_cfg)
     else:
         raise ValueError(f"Unknown direction: {args.direction}")
 
+    if missingKeys:
+        raise ValueError(f"Cannot update servers: missing replacement keys in config.yml")
+    
+    # Debug prints
     # print("Derived replacements dict:", replacements)
-    print("args.direction =", args.direction)
+    # print("args.direction =", args.direction)
     # print("source_servers =", source_servers)
     # print("dest_servers =", dest_servers)
 
-    # note: this won't delete any files in the dest that don’t exist in the src - we may wish to change that
-    print("Copying files from source to destination servers...")
+    # TODO: this won't delete any files in the destination that don’t exist in the source
+    # TODO: as prod/staging are meant to be exact copies of one another, we should do this.
     for name in source_servers:
         src_root = "/srv/daemon-data/" + source_servers[name]
         dst_root = "/srv/daemon-data/" + dest_servers.get(name, "")
@@ -41,6 +45,8 @@ def run(args):
         if args.dry_run:
             print(f"[DRY RUN] Would copy {src_root} -> {dst_root}")
         else:
+            print(f"Copying files from {src_root} to {dst_root}...")
+            print(f"[DEVNOTE] Copying disabled during dev")
             for root, dirs, files in os.walk(src_root):
                 rel_path = os.path.relpath(root, src_root)
                 dst_path = os.path.join(dst_root, rel_path)
@@ -52,8 +58,7 @@ def run(args):
                     dst_file = os.path.join(dst_path, file)
 
                     print(f"Copying {src_file} -> {dst_file}")
-                    print(f"[DEVNOTE] Copying disabled during dev")
-                    # shutil.copy2(src_file, dst_file)
+                    # shutil.copy2(src_file, dst_file) #DISABLED DURING DEV
 
     print("Updating config files...")
     count = 0
@@ -76,8 +81,8 @@ def run(args):
                         else:
                             print(f"Writing new content to {filename}")
                             print(f"[DEVNOTE] Writing disabled during dev")
-                        #     with open(path, "w") as f:
-                        #         f.write(new_content)
+                        #     with open(path, "w") as f:  #DISABLED DURING DEV
+                        #         f.write(new_content)    #DISABLED DURING DEV
                         count += 1
 
     if args.dry_run:
