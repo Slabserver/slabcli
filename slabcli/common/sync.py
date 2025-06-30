@@ -41,6 +41,15 @@ def run(args):
         if not dst_root:
             print(f"Skipping {name}, no matching destination.")
             continue
+        
+        if not os.path.exists(dst_root):
+            raise FileNotFoundError(f"Destination path does not exist: {dst_root}")
+            
+        if args.dry_run:
+            print(f"[DRY RUN] Would clear all files in {dst_root}")
+        else:
+            # Clear all destination files ahead of copying from source
+            clear_directory_contents(dst_root, dry_run=args.dry_run)
 
         if args.dry_run:
             print(f"[DRY RUN] Would copy {src_root} -> {dst_root}")
@@ -89,3 +98,18 @@ def run(args):
         print(f"Would have updated {count} files")
     else:
         print(f"Updated {count} files")
+
+def clear_directory_contents(directory, dry_run=False):
+    """Remove all files/dirs inside `directory` but not the directory itself."""
+    for entry in os.listdir(directory):
+        path = os.path.join(directory, entry)
+        if os.path.isdir(path):
+            if dry_run:
+                print(f"[DRY RUN] Would delete directory: {path}")
+            else:
+                shutil.rmtree(path)
+        else:
+            if dry_run:
+                print(f"[DRY RUN] Would delete file: {path}")
+            else:
+                os.remove(path)

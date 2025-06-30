@@ -17,7 +17,9 @@ as they are cool.
 
 ## Installation
 
-Simply run `install.sh` to setup dependencies, and install the `slabcli` in editable mode.
+Simply run `install.sh`, which will setup dependencies and install the `slabcli` in editable mode.
+
+As of the time of writing, this CLI is located on the dedi server in `/tools/slabcli`
 
 ## Config
 
