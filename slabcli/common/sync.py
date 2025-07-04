@@ -27,17 +27,22 @@ def run(args):
     if missing_keys:
         raise ValueError("Cannot update servers: missing replacement keys in config.yml")
     
+    if args.sync_worlds:
+        exempt_folders = {}
+    else:
+        exempt_folders = cfg["replacements"].get("exempt_folders", [])
+    
     # Debug prints
     # print("Derived replacements dict:", replacements)
     # print("args.direction =", args.direction)
     # print("source_servers =", source_servers)
     # print("dest_servers =", dest_servers)
 
-    sync_server_files(source_servers, dest_servers, args.dry_run)
+    sync_server_files(source_servers, dest_servers, exempt_folders, args.dry_run)
     update_config_files(dest_servers, replacements, args.dry_run)
 
 
-def sync_server_files(source_servers, dest_servers, dry_run):
+def sync_server_files(source_servers, dest_servers, exempt_folders, dry_run):
     """Clear destination dirs and sync files from source."""
     for name in source_servers:
         src_root = "/srv/daemon-data/" + source_servers[name]
@@ -50,11 +55,7 @@ def sync_server_files(source_servers, dest_servers, dry_run):
         if not os.path.exists(dst_root):
             raise FileNotFoundError(f"Destination path does not exist: {dst_root}")
 
-        if dry_run:
-            print(f"[DRY RUN] Would clear all files in {dst_root}")
-        else:
-            clear_directory_contents(dst_root, dry_run=dry_run)
-
+        clear_directory_contents(dst_root, exclude_substrings=exempt_folders, dry_run=dry_run)
         if dry_run:
             print(f"[DRY RUN] Would copy {src_root} -> {dst_root}")
         else:
@@ -71,52 +72,76 @@ def sync_server_files(source_servers, dest_servers, dry_run):
                     print(f"Copying {src_file} -> {dst_file}")
                     # shutil.copy2(src_file, dst_file)  # DISABLED DURING DEV
 
+def clear_directory_contents(directory, exclude_substrings=None, dry_run=False):
+    """Remove all files/dirs inside `directory`, skipping any path that contains an excluded substring."""
+    exclude_substrings = exclude_substrings or []
+
+    def is_excluded(path):
+        return any(excl in path for excl in exclude_substrings)
+
+    for root, dirs, files in os.walk(directory, topdown=False):
+        for file in files:
+            path = os.path.join(root, file)
+            if is_excluded(path):
+                if dry_run:
+                    print(f"[DRY RUN] Would skip {path} as it contains an excluded directory")
+                else:
+                    print(f"Skipping {path} as it contains an excluded directory")
+                continue
+            if dry_run:
+                print(f"[DRY RUN] Would delete file: {path}")
+            else:
+                print(f"Deleting dir: {dir_path}")
+                # os.remove(path) # DISABLED DURING DEV
+
+        for dir in dirs:
+            dir_path = os.path.join(root, dir)
+            if is_excluded(dir_path):
+                continue
+            if dry_run:
+                print(f"[DRY RUN] Would delete dir: {dir_path}")
+            else:
+                try:
+                    print(f"Deleting dir: {dir_path}")
+                    # os.rmdir(dir_path) # DISABLED DURING DEV
+                except OSError:
+                    print(f"Could not remove non-empty or locked dir: {dir_path}")
 
 def update_config_files(dest_servers, replacements, dry_run):
     """Apply replacements to config files in destination folders."""
     print("Updating config files...")
     count = 0
     for name in dest_servers:
-        print("checking server: " + dest_servers[name])
         server_path = "/srv/daemon-data/" + dest_servers[name]
+        print("checking server: " + dest_servers[name])
         for root, dirs, files in os.walk(server_path):
             for filename in files:
                 if filename.endswith((".yml", ".conf", ".txt")):
                     path = os.path.join(root, filename)
-                    with open(path) as f:
-                        content = f.read()
-
-                    new_content = content
-                    for key in replacements:
-                        new_content = new_content.replace(key, replacements[key])
-
-                    if new_content != content:
-                        if dry_run:
-                            print(f"[DRY RUN] Would write new content to {path}")
-                        else:
-                            print(f"Writing new content to {filename}")
-                            print(f"[DEVNOTE] Writing disabled during dev")
-                        #     with open(path, "w") as f:  # DISABLED DURING DEV
-                        #         f.write(new_content)    # DISABLED DURING DEV
+                    if process_config_file(path, replacements, dry_run):
                         count += 1
 
     if dry_run:
         print(f"Would have updated {count} files")
     else:
         print(f"Updated {count} files")
+        
+def process_config_file(path, replacements, dry_run):
+    """Apply replacements to a config file if changes are needed."""
+    with open(path) as f:
+        content = f.read()
 
+    new_content = content
+    for key in replacements:
+        new_content = new_content.replace(key, replacements[key])
 
-def clear_directory_contents(directory, dry_run=False):
-    """Remove all files/dirs inside `directory` but not the directory itself."""
-    for entry in os.listdir(directory):
-        path = os.path.join(directory, entry)
-        if os.path.isdir(path):
-            if dry_run:
-                print(f"[DRY RUN] Would delete directory: {path}")
-            else:
-                shutil.rmtree(path)
+    if new_content != content:
+        if dry_run:
+            print(f"[DRY RUN] Would write new content to {path}")
         else:
-            if dry_run:
-                print(f"[DRY RUN] Would delete file: {path}")
-            else:
-                os.remove(path)
+            print(f"Writing new content to {path}")
+            print(f"[DEVNOTE] Writing disabled during dev")
+            # with open(path, "w") as f:  # DISABLED DURING DEV
+            #     f.write(new_content)
+        return True
+    return False

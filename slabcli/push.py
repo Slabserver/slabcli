@@ -1,7 +1,7 @@
 from slabcli.common import sync
 
 def add_arguments(parser):
-    # parser.add_argument('--force', action='store_true', help='Force push even if dirty')
+    # parser.add_argument('--sync-worlds', action='store_true', help='Pull the Survival/Resource/Passage worlds from Staging to Production')
     parser.add_argument('--dry-run', action='store_true', help='Show what would be pushed')
 
 def run(args):
@@ -13,6 +13,7 @@ def run(args):
     if y == "y":
         print("Pushing state...")
         args.direction = "up"
+        
         sync.run(args)
     else:
         print("Aborting push")
