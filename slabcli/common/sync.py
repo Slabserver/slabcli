@@ -119,7 +119,7 @@ def update_config_files(dest_servers, replacements, dry_run):
         print("checking server: " + dest_servers[name])
         for root, dirs, files in os.walk(server_path):
             for filename in files:
-                if filename.endswith((".yml", ".conf", ".txt")):
+                if filename.endswith((".conf", ".txt, .properties", ".yml", "yaml")):
                     path = os.path.join(root, filename)
                     if process_config_file(path, replacements, dry_run):
                         count += 1
