@@ -33,14 +33,17 @@ def run(args):
         exempt_folders = cfg["replacements"].get("exempt_folders", [])
     
     # Debug prints
-    # print("Derived replacements dict:", replacements)
-    # print("args.direction =", args.direction)
-    # print("source_servers =", source_servers)
-    # print("dest_servers =", dest_servers)
+    print("Derived replacements dict:", replacements)
+    print("args.direction =", args.direction)
+    print("source_servers =", source_servers)
+    print("dest_servers =", dest_servers)
 
     sync_server_files(source_servers, dest_servers, exempt_folders, args.dry_run)
-    update_config_files(dest_servers, replacements, args.dry_run)
-
+    if args.dry_run:
+        # with a dry run the files aren't copied over, so we need to check replacements against production
+        update_config_files(source_servers, replacements, args.dry_run)
+    else:
+        update_config_files(dest_servers, replacements, args.dry_run)
 
 def sync_server_files(source_servers, dest_servers, exempt_folders, dry_run):
     """Clear destination dirs and sync files from source."""
