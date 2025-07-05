@@ -44,6 +44,7 @@ def run(args):
         update_config_files(source_servers, replacements, exempt_paths, args.dry_run)
     else:
         update_config_files(dest_servers, replacements, exempt_paths, args.dry_run)
+    print("exempt paths =", exempt_paths)
 
 def sync_server_files(source_servers, dest_servers, exempt_paths, dry_run):
     """Clear destination dirs and sync files from source."""
@@ -77,11 +78,6 @@ def sync_server_files(source_servers, dest_servers, exempt_paths, dry_run):
 
 def clear_directory_contents(directory, exempt_paths, dry_run):
     """Remove all files/dirs inside `directory`, skipping any path that contains an excluded substring."""
-    exclude_substrings = exempt_paths or []
-
-    def is_excluded(path):
-        return any(excl in path for excl in exclude_substrings)
-
     for root, dirs, files in os.walk(directory, topdown=False):
         for file in files:
             path = os.path.join(root, file)
@@ -99,7 +95,7 @@ def clear_directory_contents(directory, exempt_paths, dry_run):
 
         for dir in dirs:
             dir_path = os.path.join(root, dir)
-            if is_excluded(dir_path):
+            if is_excluded(exempt_paths, dir_path):
                 continue
             if dry_run:
                 print(f"[DRY RUN] Would delete dir: {dir_path}")
@@ -133,10 +129,6 @@ def update_config_files(dest_servers, replacements, exempt_paths, dry_run):
 def process_config_file(path, replacements, exempt_paths, dry_run):
     """Apply replacements to a config file if changes are needed."""
     
-    exclude_substrings = exempt_paths or []
-    
-    def is_excluded(path):
-        return any(excl in path for excl in exclude_substrings)
     
     with open(path) as f:
         content = f.read()
@@ -146,7 +138,7 @@ def process_config_file(path, replacements, exempt_paths, dry_run):
         new_content = new_content.replace(key, replacements[key])
 
     if new_content != content:
-        if is_excluded(path):
+        if is_excluded(exempt_paths, path):
             if dry_run:
                 print(f"[DRY RUN] Would skip updating {path} as it contains an excluded directory or filetype")
             else:
@@ -160,3 +152,7 @@ def process_config_file(path, replacements, exempt_paths, dry_run):
             #     f.write(new_content)
         return True
     return False
+
+def is_excluded(exclude_substrings, path):
+    exclude_substrings = exclude_substrings or []
+    return any(excl in path for excl in exclude_substrings)
