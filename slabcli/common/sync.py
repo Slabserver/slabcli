@@ -90,7 +90,7 @@ def clear_directory_contents(directory, exempt_paths, dry_run):
             if dry_run:
                 print(f"[DRY RUN] Would delete file: {path}")
             else:
-                print(f"Deleting dir: {dir_path}")
+                print(f"Deleting dir: {path}")
                 os.remove(path)
 
         for dir in dirs:
