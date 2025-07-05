@@ -38,7 +38,8 @@ def run(args):
     print("source_servers =", source_servers)
     print("dest_servers =", dest_servers)
 
-    sync_server_files(source_servers, dest_servers, exempt_paths, args.dry_run)
+    if args.update_only == False:
+        sync_server_files(source_servers, dest_servers, exempt_paths, args.dry_run)
     if args.dry_run:
         # with a dry run the files aren't copied over, so we need to check replacements against production
         update_config_files(source_servers, replacements, exempt_paths, args.dry_run)
