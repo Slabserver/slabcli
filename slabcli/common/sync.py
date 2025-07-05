@@ -81,7 +81,7 @@ def clear_directory_contents(directory, exempt_paths, dry_run):
     for root, dirs, files in os.walk(directory, topdown=False):
         for file in files:
             path = os.path.join(root, file)
-            if is_excluded(path) or file.lower().endswith(".db"):
+            if is_excluded(exempt_paths, path) or file.lower().endswith(".db"):
                 if dry_run:
                     print(f"[DRY RUN] Would skip {path} as it contains an excluded directory or filetype")
                 else:
