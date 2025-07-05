@@ -143,13 +143,14 @@ def process_config_file(path, replacements, exempt_paths, dry_run):
                 print(f"[DRY RUN] Would skip updating {path} as it contains an excluded directory or filetype")
             else:
                 print(f"Skipping {path} as it contains an excluded directory or filetype")
-        if dry_run:
-            print(f"[DRY RUN] Would write new content to {path}")
         else:
-            print(f"Writing new content to {path}")
-            print(f"[DEVNOTE] Writing disabled during dev")
-            # with open(path, "w") as f:  # DISABLED DURING DEV
-            #     f.write(new_content)
+            if dry_run:
+                print(f"[DRY RUN] Would write new content to {path}")
+            else:
+                print(f"Writing new content to {path}")
+                print(f"[DEVNOTE] Writing disabled during dev")
+                # with open(path, "w") as f:  # DISABLED DURING DEV
+                #     f.write(new_content)
         return True
     return False
 
