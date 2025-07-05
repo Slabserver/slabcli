@@ -74,7 +74,7 @@ def sync_server_files(source_servers, dest_servers, exempt_paths, dry_run):
                     src_file = os.path.join(root, file)
                     dst_file = os.path.join(dst_path, file)
                     print(f"Copying {src_file} -> {dst_file}")
-                    # shutil.copy2(src_file, dst_file)  # DISABLED DURING DEV
+                    shutil.copy2(src_file, dst_file)
 
 def clear_directory_contents(directory, exempt_paths, dry_run):
     """Remove all files/dirs inside `directory`, skipping any path that contains an excluded substring."""
@@ -91,7 +91,7 @@ def clear_directory_contents(directory, exempt_paths, dry_run):
                 print(f"[DRY RUN] Would delete file: {path}")
             else:
                 print(f"Deleting dir: {dir_path}")
-                # os.remove(path) # DISABLED DURING DEV
+                os.remove(path)
 
         for dir in dirs:
             dir_path = os.path.join(root, dir)
@@ -102,7 +102,7 @@ def clear_directory_contents(directory, exempt_paths, dry_run):
             else:
                 try:
                     print(f"Deleting dir: {dir_path}")
-                    # os.rmdir(dir_path) # DISABLED DURING DEV
+                    os.rmdir(dir_path)
                 except OSError:
                     print(f"Could not remove non-empty or locked dir: {dir_path}")
 
@@ -149,8 +149,8 @@ def process_config_file(path, replacements, exempt_paths, dry_run):
             else:
                 print(f"Writing new content to {path}")
                 print(f"[DEVNOTE] Writing disabled during dev")
-                # with open(path, "w") as f:  # DISABLED DURING DEV
-                #     f.write(new_content)
+                with open(path, "w") as f:
+                    f.write(new_content)
         return True
     return False
 
