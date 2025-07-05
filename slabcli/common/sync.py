@@ -28,9 +28,9 @@ def run(args):
         raise ValueError("Cannot update servers: missing replacement keys in config.yml")
     
     if args.sync_worlds:
-        exempt_folders = {}
+        exempt_paths = {}
     else:
-        exempt_folders = cfg["replacements"].get("exempt_folders", [])
+        exempt_paths = cfg["replacements"].get("exempt_paths", [])
     
     # Debug prints
     print("Derived replacements dict:", replacements)
@@ -38,14 +38,14 @@ def run(args):
     print("source_servers =", source_servers)
     print("dest_servers =", dest_servers)
 
-    sync_server_files(source_servers, dest_servers, exempt_folders, args.dry_run)
+    sync_server_files(source_servers, dest_servers, exempt_paths, args.dry_run)
     if args.dry_run:
         # with a dry run the files aren't copied over, so we need to check replacements against production
-        update_config_files(source_servers, replacements, args.dry_run)
+        update_config_files(source_servers, replacements, exempt_paths, args.dry_run)
     else:
-        update_config_files(dest_servers, replacements, args.dry_run)
+        update_config_files(dest_servers, replacements, exempt_paths, args.dry_run)
 
-def sync_server_files(source_servers, dest_servers, exempt_folders, dry_run):
+def sync_server_files(source_servers, dest_servers, exempt_paths, dry_run):
     """Clear destination dirs and sync files from source."""
     for name in source_servers:
         src_root = "/srv/daemon-data/" + source_servers[name]
@@ -58,7 +58,7 @@ def sync_server_files(source_servers, dest_servers, exempt_folders, dry_run):
         if not os.path.exists(dst_root):
             raise FileNotFoundError(f"Destination path does not exist: {dst_root}")
 
-        clear_directory_contents(dst_root, exempt_folders, dry_run)
+        clear_directory_contents(dst_root, exempt_paths, dry_run)
         if dry_run:
             print(f"[DRY RUN] Would copy {src_root} -> {dst_root}")
         else:
@@ -75,9 +75,9 @@ def sync_server_files(source_servers, dest_servers, exempt_folders, dry_run):
                     print(f"Copying {src_file} -> {dst_file}")
                     # shutil.copy2(src_file, dst_file)  # DISABLED DURING DEV
 
-def clear_directory_contents(directory, exempt_folders, dry_run):
+def clear_directory_contents(directory, exempt_paths, dry_run):
     """Remove all files/dirs inside `directory`, skipping any path that contains an excluded substring."""
-    exclude_substrings = exempt_folders or []
+    exclude_substrings = exempt_paths or []
 
     def is_excluded(path):
         return any(excl in path for excl in exclude_substrings)
@@ -110,9 +110,10 @@ def clear_directory_contents(directory, exempt_folders, dry_run):
                 except OSError:
                     print(f"Could not remove non-empty or locked dir: {dir_path}")
 
-def update_config_files(dest_servers, replacements, dry_run):
+def update_config_files(dest_servers, replacements, exempt_paths, dry_run):
     """Apply replacements to config files in destination folders."""
     print("Updating config files...")
+    
     count = 0
     for name in dest_servers:
         server_path = "/srv/daemon-data/" + dest_servers[name]
@@ -121,7 +122,7 @@ def update_config_files(dest_servers, replacements, dry_run):
             for filename in files:
                 if filename.endswith((".conf", ".txt, .properties", ".yml", "yaml")):
                     path = os.path.join(root, filename)
-                    if process_config_file(path, replacements, dry_run):
+                    if process_config_file(path, replacements, exempt_paths, dry_run):
                         count += 1
 
     if dry_run:
@@ -129,8 +130,14 @@ def update_config_files(dest_servers, replacements, dry_run):
     else:
         print(f"Updated {count} files")
         
-def process_config_file(path, replacements, dry_run):
+def process_config_file(path, replacements, exempt_paths, dry_run):
     """Apply replacements to a config file if changes are needed."""
+    
+    exclude_substrings = exempt_paths or []
+    
+    def is_excluded(path):
+        return any(excl in path for excl in exclude_substrings)
+    
     with open(path) as f:
         content = f.read()
 
@@ -139,6 +146,11 @@ def process_config_file(path, replacements, dry_run):
         new_content = new_content.replace(key, replacements[key])
 
     if new_content != content:
+        if is_excluded(path):
+            if dry_run:
+                print(f"[DRY RUN] Would skip updating {path} as it contains an excluded directory or filetype")
+            else:
+                print(f"Skipping {path} as it contains an excluded directory or filetype")
         if dry_run:
             print(f"[DRY RUN] Would write new content to {path}")
         else:
