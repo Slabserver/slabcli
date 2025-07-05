@@ -64,17 +64,23 @@ def sync_server_files(source_servers, dest_servers, exempt_paths, dry_run):
             print(f"[DRY RUN] Would copy {src_root} -> {dst_root}")
         else:
             print(f"Copying files from {src_root} to {dst_root}...")
-            print(f"[DEVNOTE] Copying disabled during dev")
             for root, dirs, files in os.walk(src_root):
                 rel_path = os.path.relpath(root, src_root)
                 dst_path = os.path.join(dst_root, rel_path)
-                os.makedirs(dst_path, exist_ok=True)
-
-                for file in files:
-                    src_file = os.path.join(root, file)
-                    dst_file = os.path.join(dst_path, file)
-                    print(f"Copying {src_file} -> {dst_file}")
-                    shutil.copy2(src_file, dst_file)
+                
+                if is_excluded(exempt_paths, dst_path):
+                    if dry_run:
+                        print(f"[DRY RUN] Would skip copying {dst_path} as it contains an excluded directory or filetype")
+                    else:
+                        print(f"Skipping copy of {dst_path} as it contains an excluded directory or filetype")
+                    continue
+                else:
+                    os.makedirs(dst_path, exist_ok=True)
+                    for file in files:
+                        src_file = os.path.join(root, file)
+                        dst_file = os.path.join(dst_path, file)
+                        print(f"Copying {src_file} -> {dst_file}")
+                        shutil.copy2(src_file, dst_file)
 
 def clear_directory_contents(directory, exempt_paths, dry_run):
     """Remove all files/dirs inside `directory`, skipping any path that contains an excluded substring."""
@@ -148,7 +154,6 @@ def process_config_file(path, replacements, exempt_paths, dry_run):
                 print(f"[DRY RUN] Would write new content to {path}")
             else:
                 print(f"Writing new content to {path}")
-                print(f"[DEVNOTE] Writing disabled during dev")
                 with open(path, "w") as f:
                     f.write(new_content)
         return True
