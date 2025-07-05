@@ -55,7 +55,7 @@ def sync_server_files(source_servers, dest_servers, exempt_folders, dry_run):
         if not os.path.exists(dst_root):
             raise FileNotFoundError(f"Destination path does not exist: {dst_root}")
 
-        clear_directory_contents(dst_root, exclude_substrings=exempt_folders, dry_run=dry_run)
+        clear_directory_contents(dst_root, exempt_folders, dry_run)
         if dry_run:
             print(f"[DRY RUN] Would copy {src_root} -> {dst_root}")
         else:
@@ -72,9 +72,9 @@ def sync_server_files(source_servers, dest_servers, exempt_folders, dry_run):
                     print(f"Copying {src_file} -> {dst_file}")
                     # shutil.copy2(src_file, dst_file)  # DISABLED DURING DEV
 
-def clear_directory_contents(directory, exclude_substrings=None, dry_run=False):
+def clear_directory_contents(directory, exempt_folders, dry_run):
     """Remove all files/dirs inside `directory`, skipping any path that contains an excluded substring."""
-    exclude_substrings = exclude_substrings or []
+    exclude_substrings = exempt_folders or []
 
     def is_excluded(path):
         return any(excl in path for excl in exclude_substrings)
@@ -82,11 +82,11 @@ def clear_directory_contents(directory, exclude_substrings=None, dry_run=False):
     for root, dirs, files in os.walk(directory, topdown=False):
         for file in files:
             path = os.path.join(root, file)
-            if is_excluded(path):
+            if is_excluded(path) or file.lower().endswith(".db"):
                 if dry_run:
-                    print(f"[DRY RUN] Would skip {path} as it contains an excluded directory")
+                    print(f"[DRY RUN] Would skip {path} as it contains an excluded directory or filetype")
                 else:
-                    print(f"Skipping {path} as it contains an excluded directory")
+                    print(f"Skipping {path} as it contains an excluded directory or filetype")
                 continue
             if dry_run:
                 print(f"[DRY RUN] Would delete file: {path}")
