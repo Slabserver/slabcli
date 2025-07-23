@@ -135,9 +135,11 @@ def process_config_file(path, replacements, exempt_paths, dry_run):
 
     new_content = content
     changes = []
-    for key in replacements:
-        changes.append(replacements[key])
-        new_content = new_content.replace(key, replacements[key])
+    
+    for key, value in replacements.items():
+        if key in new_content:
+            changes.append(value)
+            new_content = new_content.replace(key, value)
 
     if new_content != content:
         if is_excluded(exempt_paths, path):
