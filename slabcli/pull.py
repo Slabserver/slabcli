@@ -17,18 +17,19 @@ def run(args):
     print('')
 
     if not args.update_only:
-        print(clicolors.WARNING + 'This will pull the various files and folders from Production to Staging')
-        print(clicolors.WARNING + 'Please ensure you are ready for any Staging changes to be reset by Production')
+        print(clicolors.WARNING + 'This will pull the Slabserver files and folders from Production to Staging')
+        print(clicolors.BOLD + 'Please ensure you are ready for any Staging changes to be reset by Production')
     else:
-        print(clicolors.WARNING + 'This will only update existing Staging config files with values defined in config.yml')
-        print(clicolors.WARNING + 'Are you certain that Staging has recently received all config files from Production?')
+        print(clicolors.WARNING + 'This will only update existing config files with values defined in config.yml, as --update_only is set')
+        print(clicolors.BOLD + 'Are you certain that Staging has recently received all config files from Production?')
+    print('')
 
     if args.sync_worlds:
         print(clicolors.WARNING + 'This will pull the Survival/Resource/Passage worlds, as --sync-worlds is set')
     else:
         print(clicolors.WARNING + 'This will NOT pull the Survival/Resource/Passage world files, as --sync-worlds isn\'t set')
-
     print('')
+    
     y = input("Are you sure you wish to continue? (y/N) ")
     
     if y == "y":
