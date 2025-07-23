@@ -20,8 +20,8 @@ def run(args):
         print(clicolors.WARNING + 'This will pull the Slabserver files and folders from Production to Staging')
         print(clicolors.BOLD + 'Please ensure you are ready for any Staging changes to be reset by Production')
     else:
-        print(clicolors.WARNING + 'This will only update existing config files with values defined in config.yml, as --update_only is set')
-        print(clicolors.BOLD + 'Are you certain that Staging has recently received all config files from Production?')
+        print(clicolors.WARNING + 'This will only update existing config files with values defined in config.yml, as --update-only is set')
+        print(clicolors.BOLD + 'Are you certain that Staging has recently received all required config files from Production?')
     print('')
 
     if args.sync_worlds:
@@ -30,10 +30,10 @@ def run(args):
         print(clicolors.WARNING + 'This will NOT pull the Survival/Resource/Passage world files, as --sync-worlds isn\'t set')
     print('')
     
-    y = input(clicolors.ENDC + "Are you sure you wish to continue? (y/N) ")
+    y = input(clicolors.WHITE + "Are you sure you wish to continue? (y/N) ")
     
     if y == "y":
         args.direction = "down"
         sync.run(args)
     else:
-        print(clicolors.FAIL + "Aborting pull")
+        print(clicolors.FAIL + "Aborting the SlabCLI 'pull' operation")
