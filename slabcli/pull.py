@@ -13,13 +13,15 @@ def run(args):
         print(clicolors.FAIL + 'Error: --update-only and --sync-worlds are incompatible flags\n')
         return
     
-    print(clicolors.HEADER + 'SlabCLI: This will pull the current files and folders from Production to Staging')
-    print(clicolors.BOLD + 'Please ensure you are ready for any Staging changes to be reset by Production')
+    print(clicolors.HEADER + 'SlabCLI | pull')
     print('')
 
-    if args.update_only:
+    if not args.update_only:
+        print(clicolors.WARNING + 'This will pull the various files and folders from Production to Staging')
+        print(clicolors.WARNING + 'Please ensure you are ready for any Staging changes to be reset by Production')
+    else:
         print(clicolors.WARNING + 'This will only update existing Staging config files with values defined in config.yml')
-        print(clicolors.WARNING + 'Are you certain that Staging has been updated with all config files from Production?')
+        print(clicolors.WARNING + 'Are you certain that Staging has recently received all config files from Production?')
 
     if args.sync_worlds:
         print(clicolors.WARNING + 'This will pull the Survival/Resource/Passage worlds, as --sync-worlds is set')
