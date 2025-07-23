@@ -20,7 +20,7 @@ def run(args):
         print(clicolors.WARNING + 'This will pull the Slabserver files and folders from Production to Staging')
         print(clicolors.BOLD + 'Please ensure you are ready for any Staging changes to be reset by Production')
     else:
-        print(clicolors.WARNING + 'This will only update existing config files with values defined in config.yml, as --update-only is set')
+        print(clicolors.WARNING + 'This will only update existing config files with values defined in SlabCLI\'s config.yml, as --update-only is set')
         print(clicolors.BOLD + 'Are you certain that Staging has recently received all required config files from Production?')
     print('')
 
