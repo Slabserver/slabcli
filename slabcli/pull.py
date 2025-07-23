@@ -30,7 +30,7 @@ def run(args):
         print(clicolors.WARNING + 'This will NOT pull the Survival/Resource/Passage world files, as --sync-worlds isn\'t set')
     print('')
     
-    y = input("Are you sure you wish to continue? (y/N) ")
+    y = input(clicolors.ENDC + "Are you sure you wish to continue? (y/N) ")
     
     if y == "y":
         args.direction = "down"
