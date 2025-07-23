@@ -5,16 +5,14 @@ from slabcli import config
 
 def run(args):
     cfg = config.load_config()
-    direction = args.direction
 
-    if direction == "up":
+    if args.direction == "up":
         source_servers = cfg["servers"].get("staging", {})
         dest_servers = cfg["servers"].get("prod", {})
         replacements, missing_keys = config.compute_config_replacements(
-            cfg["replacements"].get("prod", {}),
-            cfg["replacements"].get("staging", {})
+            cfg["replacements"].get("prod", {}),cfg["replacements"].get("staging", {})
         )
-    elif direction == "down":
+    elif args.direction == "down":
         source_servers = cfg["servers"].get("prod", {})
         dest_servers = cfg["servers"].get("staging", {})
         replacements, missing_keys = config.compute_config_replacements(
@@ -22,14 +20,14 @@ def run(args):
             cfg["replacements"].get("prod", {})
         )
     else:
-        raise ValueError(f"Unknown direction: {direction}")
+        raise ValueError(f"Unknown direction: {args.direction}")
 
     if missing_keys:
         raise ValueError("Cannot update servers: missing replacement keys in config.yml")
     
     exempt_paths = cfg["replacements"].get("exempt_paths", [])
     
-    if args.sync_worlds == False:
+    if not args.sync_worlds:
         exempt_paths += cfg["replacements"].get("world_names", [])
     
     # Debug prints
@@ -40,8 +38,8 @@ def run(args):
 
     if args.update_only == False:
         sync_server_files(source_servers, dest_servers, exempt_paths, args.dry_run)
-    if args.dry_run:
-        # with a dry run the files aren't copied over, so we need to check replacements against production
+    if args.dry_run and args.sync_worlds:
+        # with a dry run the files aren't copied over, so we need to check any replacements against production
         update_config_files(source_servers, replacements, exempt_paths, args.dry_run)
     else:
         update_config_files(dest_servers, replacements, exempt_paths, args.dry_run)
@@ -91,13 +89,10 @@ def clear_directory_contents(directory, exempt_paths, dry_run):
             if is_excluded(exempt_paths, path) or file.lower().endswith(".db"):
                 if dry_run:
                     print(f"[DRY RUN] Would skip {path} as it contains an excluded directory or filetype")
-                else:
-                    print(f"Skipping {path} as it contains an excluded directory or filetype")
                 continue
             if dry_run:
                 print(f"[DRY RUN] Would delete file: {path}")
             else:
-                print(f"Deleting dir: {path}")
                 os.remove(path)
 
         for dir in dirs:
@@ -116,7 +111,6 @@ def clear_directory_contents(directory, exempt_paths, dry_run):
 def update_config_files(dest_servers, replacements, exempt_paths, dry_run):
     """Apply replacements to config files in destination folders."""
     print("Updating config files...")
-    
     count = 0
     for name in dest_servers:
         server_path = "/srv/daemon-data/" + dest_servers[name]
@@ -136,12 +130,13 @@ def update_config_files(dest_servers, replacements, exempt_paths, dry_run):
 def process_config_file(path, replacements, exempt_paths, dry_run):
     """Apply replacements to a config file if changes are needed."""
     
-    
     with open(path) as f:
         content = f.read()
 
     new_content = content
+    changes = []
     for key in replacements:
+        changes.append(replacements[key])
         new_content = new_content.replace(key, replacements[key])
 
     if new_content != content:
@@ -152,9 +147,9 @@ def process_config_file(path, replacements, exempt_paths, dry_run):
                 print(f"Skipping {path} as it contains an excluded directory or filetype")
         else:
             if dry_run:
-                print(f"[DRY RUN] Would write new content to {path}")
+                print(f"[DRY RUN] Would write new content to {path} (changes: {', '.join(changes)})")
             else:
-                print(f"Writing new content to {path}")
+                print(f"Writing new content to {path} (changes: {', '.join(changes)})")
                 with open(path, "w") as f:
                     f.write(new_content)
         return True

@@ -13,7 +13,7 @@ def run(args):
     if y == "y":
         print("Pushing state...")
         args.direction = "up"
-        print("NOPE: DISABLED DURING DEV")
+        print("NOPE: DISABLED DURING DEVELOPMENT OF SLABCLI")
         # sync.run(args) #DISABLED DURING DEV
     else:
         print("Aborting push")
