@@ -154,7 +154,7 @@ def process_config_file(path, replacements, exempt_paths, dry_run):
                 print(f"Writing new content to {path} (changes: {', '.join(changes)})")
                 with open(path, "w") as f:
                     f.write(new_content)
-        return True
+            return True
     return False
 
 def is_excluded(exclude_substrings, path):
