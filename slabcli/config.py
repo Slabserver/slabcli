@@ -4,10 +4,13 @@ import logging
 from importlib.resources import files
 
 logger = logging.getLogger(__name__)
-config_path = files("slabcli").joinpath("config.yml")
 missing_keys = False
 
+def get_config_path():
+    return files("slabcli").joinpath("config.yml")
+
 def load_config():
+    config_path = get_config_path()
     with config_path.open("r") as f:
         config = yaml.safe_load(f)
         return config
