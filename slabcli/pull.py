@@ -25,7 +25,7 @@ def run(args):
     if last_pull_files:
         ts_local = datetime.fromtimestamp(last_pull_files, tz=timezone.utc)
         ts_readable = ts_local.strftime("%Y-%m-%d %H:%M:%S UTC")
-        print(clicolors.OKGREEN + f"Last pull of all files/folders from Production to Staging occurred at: {ts_readable}")
+        print(clicolors.OKGREEN + f"Last update of all files/folders from Production to Staging occurred at: {ts_readable}")
     if last_pull_config_only:
         ts_local = datetime.fromtimestamp(last_pull_config_only, tz=timezone.utc)
         ts_readable = ts_local.strftime("%Y-%m-%d %H:%M:%S UTC")
