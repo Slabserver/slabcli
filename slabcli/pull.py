@@ -48,7 +48,8 @@ def run(args):
     
     y = input(clicolors.WHITE + "Are you sure you wish to continue? (y/N) ")
     if y == "y":
-        y = input(clicolors.WHITE + "Are the Proxy/Survival/Resource/Passage test servers powered off? (y/N) ")
+        y = input(clicolors.WHITE + "Are the Proxy/Survival/Resource/Passage test servers powered off? (y/N)")
+        y = input(clicolors.WARNING + "(You can use " + clicolors.WHITE + "/stop server:TestNetwork" + clicolors.WARNING + " in our Discord)")
         if y == "y":
             args.direction = "down"
             sync.run(args, cfg)
