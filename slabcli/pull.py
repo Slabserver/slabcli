@@ -1,3 +1,5 @@
+from datetime import datetime
+from slabcli import config
 from slabcli.common import sync
 from slabcli.common.colors import clicolors
 
@@ -7,7 +9,8 @@ def add_arguments(parser):
     parser.add_argument('--update-only', action='store_true', help='pull the config changes only, with no copying of files at all')
 
 def run(args):
-        
+    cfg = config.load_config()
+    
     print('')
     if args.update_only & args.sync_worlds:
         print(clicolors.FAIL + 'Error: --update-only and --sync-worlds are incompatible flags\n')
@@ -15,13 +18,24 @@ def run(args):
     
     print(clicolors.HEADER + 'SlabCLI | pull')
     print('')
+    
+    last_pull_all_files = cfg.get("meta", {}).get("last_pull_all_files")
+    last_pull_config_only = cfg.get("meta", {}).get("last_pull_cfg_only")
+
+    if last_pull_all_files:
+        ts_readable = datetime.fromtimestamp(last_pull_all_files).strftime("%Y-%m-%d %H:%M:%S")
+        print(clicolors.OKGREEN + f"Last pull of all files/folders from Production to Staging occurred at: {ts_readable}")
+    if last_pull_config_only:
+        ts_readable = datetime.fromtimestamp(last_pull_config_only).strftime("%Y-%m-%d %H:%M:%S")
+        print(clicolors.OKCYAN + f"Last pull with --update-only from Production to Staging occurred at: {ts_readable}")
+    print('')
 
     if not args.update_only:
         print(clicolors.WARNING + 'This will pull the Slabserver files and folders from Production to Staging')
         print(clicolors.BOLD + 'Please ensure you are ready for any Staging changes to be reset by Production')
     else:
         print(clicolors.WARNING + 'This will only update existing config files with values defined in SlabCLI\'s config.yml, as --update-only is set')
-        print(clicolors.BOLD + 'Are you certain that Staging has recently received all required config files from Production?')
+        print(clicolors.BOLD + 'Are you certain that Staging has all required config files from Production?')
     print('')
 
     if args.sync_worlds:

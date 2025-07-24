@@ -1,10 +1,11 @@
 import os
+import time
 import shutil
+import yaml
 from slabcli import config
 
 
-def run(args):
-    cfg = config.load_config()
+def run(args, cfg):
 
     if args.direction == "up":
         source_servers = cfg["servers"].get("staging", {})
@@ -44,6 +45,8 @@ def run(args):
     else:
         update_config_files(dest_servers, replacements, exempt_paths, args.dry_run)
     print("exempt paths =", exempt_paths)
+    
+    update_sync_timestamps(args, cfg)
 
 def sync_server_files(source_servers, dest_servers, exempt_paths, dry_run):
     """Clear destination dirs and sync files from source."""
@@ -160,3 +163,17 @@ def process_config_file(path, replacements, exempt_paths, dry_run):
 def is_excluded(exclude_substrings, path):
     exclude_substrings = exclude_substrings or []
     return any(excl in path for excl in exclude_substrings)
+
+def update_sync_timestamps(args, cfg):
+    cfg["meta"] = cfg.get("meta", {})
+    if args.direction == "down" and not args.dry_run:
+        if args.update_only:
+            cfg["meta"]["last_pull_cfg_only"] = int(time.time())
+            print(f"Updated config.yml with last pull timestamp: {cfg['meta']['last_pull_cfg_only']}")
+        else:
+            cfg["meta"]["last_pull_all_files"] = int(time.time())
+            print(f"Updated config.yml with last pull timestamp: {cfg['meta']['last_pull_all_files']}")
+
+        config_path = config.get_config_path()
+        with open(config_path, "w") as f:
+            yaml.dump(cfg, f, default_flow_style=False)
