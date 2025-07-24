@@ -49,7 +49,7 @@ def run(args):
     y = input(clicolors.WHITE + "Are you sure you wish to continue? (y/N) ")
     if y == "y":
         print(clicolors.WARNING + "Please ensure the test servers are powered off prior to running any pull operation, to avoid data loss")
-        print(clicolors.WARNING + "(Running the " + clicolors.WHITE + "/stop server:TestNetwork" + clicolors.WARNING + "modbot command in our Discord is typically fastest)")
+        print(clicolors.WARNING + "(Running the " + clicolors.WHITE + "/stop server:TestNetwork" + clicolors.WARNING + " modbot command in our Discord is typically fastest)")
         y = input(clicolors.WHITE + "Are the Proxy/Survival/Resource/Passage test servers powered off? (y/N)")
         if y == "y":
             args.direction = "down"
