@@ -32,12 +32,12 @@ def run(args):
         print(clicolors.OKCYAN + f"Last update of Staging config files from SlabCLI's config.yml occurred at: {ts_readable}")
     print('')
 
-    if not args.update_only:
-        print(clicolors.WARNING + 'This will pull the Slabserver files and folders from Production to Staging')
-        print(clicolors.BOLD + 'Please ensure you are ready for any Staging changes to be reset by Production')
-    else:
+    if args.update_only:
         print(clicolors.WARNING + 'This will only update existing config files with values defined in SlabCLI\'s config.yml, as --update-only is set')
         print(clicolors.BOLD + 'Are you certain that Staging has all required config files from Production?')
+    else:
+        print(clicolors.WARNING + 'This will pull the Slabserver files and folders from Production to Staging, updating files with values defined in SlabCLI\'s config.yml')
+        print(clicolors.BOLD + 'Please ensure you are ready for any Staging changes to be reset by Production')
     print('')
 
     if args.sync_worlds:
