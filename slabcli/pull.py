@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from slabcli import config
 from slabcli.common import sync
 from slabcli.common.colors import clicolors
@@ -23,10 +23,12 @@ def run(args):
     last_pull_config_only = cfg.get("meta", {}).get("last_pull_cfg_only")
 
     if last_pull_all_files:
-        ts_readable = datetime.fromtimestamp(last_pull_all_files).strftime("%Y-%m-%d %H:%M:%S")
+        ts_local = datetime.fromtimestamp(last_pull_all_files, tz=timezone.utc).astimezone()
+        ts_readable = ts_local.strftime("%Y-%m-%d %H:%M:%S %Z")
         print(clicolors.OKGREEN + f"Last pull of all files/folders from Production to Staging occurred at: {ts_readable}")
     if last_pull_config_only:
-        ts_readable = datetime.fromtimestamp(last_pull_config_only).strftime("%Y-%m-%d %H:%M:%S")
+        ts_local = datetime.fromtimestamp(last_pull_config_only, tz=timezone.utc).astimezone()
+        ts_readable = ts_local.strftime("%Y-%m-%d %H:%M:%S %Z")
         print(clicolors.OKCYAN + f"Last pull with --update-only from Production to Staging occurred at: {ts_readable}")
     print('')
 
