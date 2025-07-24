@@ -19,17 +19,17 @@ def run(args):
     print(clicolors.HEADER + 'SlabCLI | pull')
     print('')
     
-    last_pull_all_files = cfg.get("meta", {}).get("last_pull_all_files")
-    last_pull_config_only = cfg.get("meta", {}).get("last_pull_cfg_only")
+    last_pull_files = cfg.get("meta", {}).get("last_pull_files")
+    last_pull_config_only = cfg.get("meta", {}).get("last_pull_cfg")
 
-    if last_pull_all_files:
-        ts_local = datetime.fromtimestamp(last_pull_all_files, tz=timezone.utc)
+    if last_pull_files:
+        ts_local = datetime.fromtimestamp(last_pull_files, tz=timezone.utc)
         ts_readable = ts_local.strftime("%Y-%m-%d %H:%M:%S UTC")
         print(clicolors.OKGREEN + f"Last pull of all files/folders from Production to Staging occurred at: {ts_readable}")
     if last_pull_config_only:
         ts_local = datetime.fromtimestamp(last_pull_config_only, tz=timezone.utc)
         ts_readable = ts_local.strftime("%Y-%m-%d %H:%M:%S UTC")
-        print(clicolors.OKCYAN + f"Last pull with --update-only from Production to Staging occurred at: {ts_readable}")
+        print(clicolors.OKCYAN + f"Last update of Staging config files from SlabCLI's config.yml occurred at: {ts_readable}")
     print('')
 
     if not args.update_only:
