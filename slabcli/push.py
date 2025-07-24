@@ -14,6 +14,6 @@ def run(args):
         print("Pushing state...")
         args.direction = "up"
         print("NOPE: DISABLED DURING DEVELOPMENT OF SLABCLI")
-        # sync.run(args) #DISABLED DURING DEV
+        # sync.run(args, cfg) #DISABLED DURING DEV
     else:
         print("Aborting push")

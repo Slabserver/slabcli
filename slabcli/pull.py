@@ -49,6 +49,6 @@ def run(args):
         y = input(clicolors.WHITE + "Are the Proxy/Survival/Resource/Passage test servers powered off? (y/N) ")
         if y == "y":
             args.direction = "down"
-            sync.run(args)
+            sync.run(args, cfg)
     else:
         print(clicolors.FAIL + "Aborting the SlabCLI 'pull' operation")
