@@ -3,6 +3,8 @@ from slabcli import config
 from slabcli.common import sync
 from slabcli.common.colors import clicolors
 
+abort_msg = clicolors.FAIL + "Aborting the SlabCLI 'pull' operation"
+
 def add_arguments(parser):
     parser.add_argument('--dry-run', action='store_true', help='show what would be pulled')
     parser.add_argument('--sync-worlds', action='store_true', help='pull the Survival/Resource/Passage worlds (disabled by default)')
@@ -52,9 +54,11 @@ def run(args):
         print(clicolors.WARNING + "(Running the " + clicolors.WHITE + "/stop server:TestNetwork" + clicolors.WARNING + " modbot command in our Discord is typically the fastest way)")
         print('')
         
-        y = input(clicolors.WHITE + "Are the Proxy/Survival/Resource/Passage test servers powered off? (y/N)")
+        y = input(clicolors.WHITE + "Are the Proxy/Survival/Resource/Passage test servers powered off? (y/N) ")
         if y == "y":
             args.direction = "down"
             sync.run(args, cfg)
+        else:
+            print(abort_msg)
     else:
-        print(clicolors.FAIL + "Aborting the SlabCLI 'pull' operation")
+        print(abort_msg)

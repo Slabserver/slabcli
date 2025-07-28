@@ -170,8 +170,8 @@ def update_sync_timestamps(args, cfg):
         if not args.update_only:
             cfg["meta"]["last_pull_files"] = int(time.time())
         cfg["meta"]["last_pull_cfg"] = int(time.time())
-        print(f"Updated config.yml with last pull timestamp: {cfg['meta']['last_pull_cfg']}")
 
         config_path = config.get_config_path()
         with open(config_path, "w") as f:
             yaml.dump(cfg, f, default_flow_style=False)
+        print(f"Updated config.yml with last pull timestamp: {cfg['meta']['last_pull_cfg']}")
