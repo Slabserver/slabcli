@@ -1,3 +1,4 @@
+import hashlib
 from datetime import datetime, timezone
 from slabcli import config
 from slabcli.common import sync
@@ -47,6 +48,10 @@ def run(args):
     else:
         print(clicolors.WARNING + 'This will NOT pull the Survival/Resource/Passage world files, as --sync-worlds isn\'t set')
     print('')
+
+    if not jar_files_match(cfg):
+        print("AAHHH STAGING AHEAD OF PROD ARE YOU SURE")
+        return
     
     y = input(clicolors.WHITE + "Are you sure you wish to continue? (y/N) ")
     if y != "y":
@@ -64,3 +69,37 @@ def run(args):
         
     args.direction = "down"
     sync.run(args, cfg)
+
+def jar_files_match(cfg):
+    jar_prefix = "/srv/daemon-data/"
+    jar_map = {
+        "proxy": "/bungeecord.jar",
+        "passage": "/server.jar",
+        "survival": "/server.jar",
+        "resource": "/server.jar"
+    }
+
+    for server, jar_name in jar_map.items():
+        prod_id = cfg["servers"].get("prod", {}).get(server)
+        staging_id = cfg["servers"].get("staging", {}).get(server)
+
+        if not prod_id or not staging_id:
+            return False  # Missing server entries
+
+        prod_jar = f"{jar_prefix}{prod_id}{jar_name}"
+        staging_jar = f"{jar_prefix}{staging_id}{jar_name}"
+
+        if not files_match(prod_jar, staging_jar):
+            return False
+
+    return True
+        
+def file_checksum(path, algo="sha256", chunk_size=8192):
+    h = hashlib.new(algo)
+    with open(path, "rb") as f:
+        while chunk := f.read(chunk_size):
+            h.update(chunk)
+    return h.hexdigest()
+
+def files_match(path1, path2):
+    return file_checksum(path1) == file_checksum(path2)
