@@ -51,7 +51,7 @@ def run(args):
     print('')
 
     if not jar_files_match(cfg) and not args.update_only:
-        print(clicolors.FAIL + "Error: Staging and Production are running different server .jar files - Staging is likely being upgraded to a newer Minecraft version")
+        print(clicolors.FAIL + "Error: Staging and Production are using different server .jar files - Staging is likely being upgraded to a newer Minecraft version")
         print(clicolors.FAIL + "A pull should follow a successful push - unless Staging is being reset, you are likely to override a Staging upgrade by mistake")
         if not args.force_reset:
             print(clicolors.FAIL + "If you are certain that this is what you are trying to do, run 'slabcli pull' with the --force-reset flag to bypass this error")
