@@ -10,6 +10,7 @@ def add_arguments(parser):
     parser.add_argument('--dry-run', action='store_true', help='show what would be pulled')
     parser.add_argument('--sync-worlds', action='store_true', help='pull the Survival/Resource/Passage worlds (disabled by default)')
     parser.add_argument('--update-only', action='store_true', help='pull the config changes only, with no copying of files at all')
+    parser.add_argument('--force-reset', action='store_true', help='force Staging to be reset by Production even if .jar files differ')
 
 def run(args):
     cfg = config.load_config()
@@ -49,9 +50,12 @@ def run(args):
         print(clicolors.WARNING + 'This will NOT pull the Survival/Resource/Passage world files, as --sync-worlds isn\'t set')
     print('')
 
-    if not jar_files_match(cfg):
-        print("AAHHH STAGING AHEAD OF PROD ARE YOU SURE")
-        return
+    if not jar_files_match(cfg) and not args.update_only:
+        print(clicolors.FAIL + "Error: Staging and Production are running different server versions - Staging is likely being upgraded to a new Minecraft version")
+        print(clicolors.FAIL + "A pull should follow a successful push - unless you are resetting Staging, you are likely to override a Staging upgrade by accident")
+        if not args.force_reset:
+            print(clicolors.FAIL + "If you are certain that this is what you are trying to do, run 'slabcli pull' with the --force-reset flag to bypass this error")
+            return
     
     y = input(clicolors.WHITE + "Are you sure you wish to continue? (y/N) ")
     if y != "y":
@@ -81,7 +85,7 @@ def jar_files_match(cfg):
 
     for server, jar_name in jar_map.items():
         prod_id = cfg["servers"].get("prod", {}).get(server)
-        staging_id = cfg["servers"].get("prod", {}).get(server)
+        staging_id = cfg["servers"].get("staging", {}).get(server)
 
         if not prod_id or not staging_id:
             return False  # Missing server entries
