@@ -26,10 +26,9 @@ def run(args, cfg):
     if missing_keys:
         raise ValueError("Cannot update servers: missing replacement keys in config.yml")
     
-    exempt_paths = cfg["replacements"].get("exempt_paths", [])
-    
+    exempt_paths = list(cfg["replacements"].get("exempt_paths", []))
     if not args.sync_worlds:
-        exempt_paths += cfg["replacements"].get("world_names", [])
+        exempt_paths += list(cfg["replacements"].get("world_names", {}).values())
     
     # Debug prints
     print("Derived replacements dict:", replacements)
