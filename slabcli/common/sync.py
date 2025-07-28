@@ -141,7 +141,7 @@ def process_config_file(path, replacements, exempt_paths, dry_run):
     
     for key, value in replacements.items():
         if key in new_content:
-            changes.append(value)
+            changes.append(key + " -> " + value)
             new_content = new_content.replace(key, value)
 
     if new_content != content:
