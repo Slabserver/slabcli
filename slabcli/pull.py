@@ -54,11 +54,12 @@ def run(args):
         print(clicolors.WARNING + "(Running the " + clicolors.WHITE + "/stop server:TestNetwork" + clicolors.WARNING + " modbot command in our Discord is typically the fastest way)")
         print('')
         
-        y = input(clicolors.WHITE + "Are the Proxy/Survival/Resource/Passage test servers powered off? (y/N) ")
-        if y == "y":
-            args.direction = "down"
-            sync.run(args, cfg)
-        else:
-            print(abort_msg)
+        if not args.dry_run:
+            y = input(clicolors.WHITE + "Are the Proxy/Survival/Resource/Passage test servers powered off? (y/N) ")
+            if y == "y":
+                args.direction = "down"
+                sync.run(args, cfg)
+            else:
+                print(abort_msg)
     else:
         print(abort_msg)
