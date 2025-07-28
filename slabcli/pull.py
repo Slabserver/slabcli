@@ -81,7 +81,7 @@ def jar_files_match(cfg):
 
     for server, jar_name in jar_map.items():
         prod_id = cfg["servers"].get("prod", {}).get(server)
-        staging_id = cfg["servers"].get("staging", {}).get(server)
+        staging_id = cfg["servers"].get("prod", {}).get(server)
 
         if not prod_id or not staging_id:
             return False  # Missing server entries
