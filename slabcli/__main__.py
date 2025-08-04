@@ -14,9 +14,6 @@ def main():
     args = parser.parse_args()
     args.func(args)
 
-    # Load config (from fixed location)
-    # cfg = config.load_config()
-
 if __name__ == '__main__':
     main()
 
