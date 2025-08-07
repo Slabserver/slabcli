@@ -44,13 +44,14 @@ def run(args, cfg):
         # If world syncing is disabled, exclude all known world names from the replacement step
         exempt_paths += list(cfg["replacements"].get("world_names", {}).values())
 
+    if args.debug:
     # Debug output to verify the setup before proceeding
-    print(clifmt.LIGHT_GRAY + "replacements dict =", replacements)
-    print(clifmt.LIGHT_GRAY + "args.direction =", args.direction)
-    print(clifmt.LIGHT_GRAY + "source_servers =", source_servers)
-    print(clifmt.LIGHT_GRAY + "dest_servers =", dest_servers)
-    print(clifmt.LIGHT_GRAY + "exempt paths =", exempt_paths)
-    print("")
+        print(clifmt.LIGHT_GRAY + "replacements dict =", replacements)
+        print(clifmt.LIGHT_GRAY + "args.direction =", args.direction)
+        print(clifmt.LIGHT_GRAY + "source_servers =", source_servers)
+        print(clifmt.LIGHT_GRAY + "dest_servers =", dest_servers)
+        print(clifmt.LIGHT_GRAY + "exempt paths =", exempt_paths)
+        print("")
 
     # Step 1: Sync files from source to destination unless we're in update-only mode
     if not args.update_only:
@@ -103,11 +104,11 @@ def sync_server_files(source_servers, dest_servers, exempt_paths, dry_run):
                 # Skip copying if this path should be excluded
                 if is_excluded(exempt_paths, dest_path):
                     if dry_run:
-                        print(
+                        print(clifmt.LIGHT_GRAY +
                             f"[DRY RUN] Would skip copying {dest_path} as it contains an excluded directory or filetype"
                         )
                     else:
-                        print(
+                        print(clifmt.LIGHT_GRAY +
                             f"Skipping copy of {dest_path} as it contains an excluded directory or filetype"
                         )
                     continue
@@ -135,7 +136,7 @@ def clear_directory_contents(directory, exempt_paths, dry_run):
 
             if is_excluded(exempt_paths, path) or file.lower().endswith(".db"):
                 if dry_run:
-                    print(
+                    print(clifmt.LIGHT_GRAY +
                         f"[DRY RUN] Would skip {path} as it contains an excluded directory or filetype"
                     )
                 continue
@@ -221,12 +222,12 @@ def process_config_file(path, replacements, exempt_paths, dry_run):
         if is_excluded(exempt_paths, path):
             # If running in dry-run mode, print a message indicating that the file would be skipped.
             if dry_run:
-                print(clifmt.NEGATIVE +
+                print(clifmt.LIGHT_GRAY +
                     f"[DRY RUN] Would skip updating {short_path} as it contains an excluded directory or filetype"
                 )
             else:
                 # In non-dry-run mode, print a message that the file is being skipped.
-                print(clifmt.NEGATIVE +
+                print(clifmt.LIGHT_GRAY +
                     f"Skipping {short_path} as it contains an excluded directory or filetype"
                 )
         else:

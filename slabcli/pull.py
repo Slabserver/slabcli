@@ -7,6 +7,7 @@ from slabcli.common.fmt import clifmt
 abort_msg = clifmt.FAIL + "Aborting the SlabCLI 'pull' operation"
 
 def add_arguments(parser):
+    parser.add_argument('--debug', action='store_true', help='print internal config mappings for Staging and Production')
     parser.add_argument('--dry-run', action='store_true', help='show what files and config changes would be pulled to Staging')
     parser.add_argument('--sync-worlds', action='store_true', help='pull the Survival/Resource/Passage worlds (disabled by default)')
     parser.add_argument('--update-only', action='store_true', help='pull the config changes only, with no copying of files at all')
@@ -16,7 +17,7 @@ def run(args):
     cfg = config.load_config()
     
     print('')
-    print(clifmt.HEADER + 'SlabCLI | pull' + clifmt.HEADER)
+    print(clifmt.HEADER + 'SlabCLI | pull')
     print('')
 
     print_cmd_info(args,cfg)

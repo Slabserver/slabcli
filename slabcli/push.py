@@ -13,7 +13,7 @@ def run(args):
     cfg = config.load_config()
 
     print('')
-    print(clifmt.HEADER + 'SlabCLI | push') + clifmt.HEADER
+    print(clifmt.HEADER + 'SlabCLI | push')
     print('')
 
     print_cmd_info(args,cfg)
