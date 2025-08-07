@@ -2,9 +2,9 @@ import hashlib
 from datetime import datetime, timezone
 from slabcli import config
 from slabcli.common import sync
-from slabcli.common.colors import clicolors
+from slabcli.common.fmt import clifmt
 
-abort_msg = clicolors.FAIL + "Aborting the SlabCLI 'pull' operation"
+abort_msg = clifmt.FAIL + "Aborting the SlabCLI 'pull' operation"
 
 def add_arguments(parser):
     parser.add_argument('--dry-run', action='store_true', help='show what files and config changes would be pulled to Staging')
@@ -16,21 +16,21 @@ def run(args):
     cfg = config.load_config()
     
     print('')
-    print(clicolors.HEADER + 'SlabCLI | pull')
+    print(clifmt.HEADER + 'SlabCLI | pull' + clifmt.HEADER)
     print('')
 
     print_cmd_info(args,cfg)
     
-    y = input(clicolors.WHITE + "Are you sure you wish to continue? (y/N) ")
+    y = input(clifmt.WHITE + "Are you sure you wish to continue? (y/N) ")
     if y != "y":
         print(abort_msg)
         return
     if not args.dry_run:
-        print(clicolors.WARNING + "Please ensure the test servers are powered off prior to running any pull operation, to avoid any potential errors")
-        print(clicolors.WARNING + "(Running the " + clicolors.WHITE + "/stop server:TestNetwork" + clicolors.WARNING + " modbot command in our Discord is typically the fastest way)")
+        print(clifmt.WARNING + "Please ensure the test servers are powered off prior to running any pull operation, to avoid any potential errors")
+        print(clifmt.WARNING + "(Running the " + clifmt.WHITE + "/stop server:TestNetwork" + clifmt.WARNING + " modbot command in our Discord is typically the fastest way)")
         print('')
         
-        y = input(clicolors.WHITE + "Are the Proxy/Survival/Resource/Passage test servers powered off? (y/N) ")
+        y = input(clifmt.WHITE + "Are the Proxy/Survival/Resource/Passage test servers powered off? (y/N) ")
         if y != "y":
             print(abort_msg)
             return
@@ -40,7 +40,7 @@ def run(args):
 
 def print_cmd_info(args, cfg):
     if args.update_only & args.sync_worlds:
-        print(clicolors.FAIL + 'Error: --update-only and --sync-worlds are incompatible flags\n')
+        print(clifmt.FAIL + 'Error: --update-only and --sync-worlds are incompatible flags\n')
         print(abort_msg)
         exit()
 
@@ -50,32 +50,32 @@ def print_cmd_info(args, cfg):
     if last_pull_files:
         ts_local = datetime.fromtimestamp(last_pull_files, tz=timezone.utc)
         ts_readable = ts_local.strftime("%Y-%m-%d %H:%M:%S UTC")
-        print(clicolors.OKGREEN + f"Last update of all files/folders from Production to Staging occurred at: {ts_readable}")
+        print(clifmt.OKGREEN + f"Last update of all files/folders from Production to Staging occurred at: {ts_readable}")
     if last_pull_config_only:
         ts_local = datetime.fromtimestamp(last_pull_config_only, tz=timezone.utc)
         ts_readable = ts_local.strftime("%Y-%m-%d %H:%M:%S UTC")
-        print(clicolors.OKCYAN + f"Last update of Staging config files from SlabCLI's config.yml occurred at: {ts_readable}")
+        print(clifmt.OKCYAN + f"Last update of Staging config files from SlabCLI's config.yml occurred at: {ts_readable}")
     print('')
 
     if args.update_only:
-        print(clicolors.WARNING + 'This will only update existing config files with values defined in SlabCLI\'s config.yml, as --update-only is set')
-        print(clicolors.BOLD + 'Are you certain that Staging has all required config files from Production?')
+        print(clifmt.WARNING + 'This will only update existing config files with values defined in SlabCLI\'s config.yml, as --update-only is set')
+        print(clifmt.BOLD + 'Are you certain that Staging has all required config files from Production?')
     else:
-        print(clicolors.WARNING + 'This will pull the Slabserver files and folders from Production to Staging, updating files with values defined in SlabCLI\'s config.yml')
-        print(clicolors.BOLD + 'Please ensure you are ready for any Staging changes to be reset by Production')
+        print(clifmt.WARNING + 'This will pull the Slabserver files and folders from Production to Staging, updating files with values defined in SlabCLI\'s config.yml')
+        print(clifmt.BOLD + 'Please ensure you are ready for any Staging changes to be reset by Production')
     print('')
 
     if args.sync_worlds:
-        print(clicolors.WARNING + 'This will pull the Survival/Resource/Passage worlds, as --sync-worlds is set')
+        print(clifmt.WARNING + 'This will pull the Survival/Resource/Passage worlds, as --sync-worlds is set')
     else:
-        print(clicolors.WARNING + 'This will NOT pull the Survival/Resource/Passage world files, as --sync-worlds isn\'t set')
+        print(clifmt.WARNING + 'This will NOT pull the Survival/Resource/Passage world files, as --sync-worlds isn\'t set')
     print('')
 
     if not jar_files_match(cfg) and not args.update_only:
-        print(clicolors.FAIL + "Error: Staging and Production are using different server .jar files - Staging is likely being upgraded to a newer Minecraft version")
-        print(clicolors.FAIL + "A pull should follow a successful push - unless Staging is being reset, you are likely to override a Staging upgrade by mistake")
+        print(clifmt.FAIL + "Error: Staging and Production are using different server .jar files - Staging is likely being upgraded to a newer Minecraft version")
+        print(clifmt.FAIL + "A pull should follow a successful push - unless Staging is being reset, you are likely to override a Staging upgrade by mistake")
         if not args.force_reset:
-            print(clicolors.FAIL + "If you are certain that this is what you are trying to do, run 'slabcli pull' with the --force-reset flag to bypass this error")
+            print(clifmt.FAIL + "If you are certain that this is what you are trying to do, run 'slabcli pull' with the --force-reset flag to bypass this error")
             print(abort_msg)
             exit()
 

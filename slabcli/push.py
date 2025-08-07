@@ -1,9 +1,9 @@
 from datetime import time
 from slabcli import config
 from slabcli.common import sync
-from slabcli.common.colors import clicolors
+from slabcli.common.fmt import clifmt
 
-abort_msg = clicolors.FAIL + "Aborting the SlabCLI 'push' operation"
+abort_msg = clifmt.FAIL + "Aborting the SlabCLI 'push' operation"
 
 def add_arguments(parser):
     # parser.add_argument('--sync-worlds', action='store_true', help='Pull the Survival/Resource/Passage worlds from Staging to Production')
@@ -13,7 +13,7 @@ def run(args):
     cfg = config.load_config()
 
     print('')
-    print(clicolors.HEADER + 'SlabCLI | push')
+    print(clifmt.HEADER + 'SlabCLI | push') + clifmt.HEADER
     print('')
 
     print_cmd_info(args,cfg)

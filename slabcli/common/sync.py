@@ -3,7 +3,9 @@ import time
 import shutil
 import yaml
 from slabcli import config
+from slabcli.common.fmt import clifmt
 
+server_root = "/srv/daemon-data/"
 
 def run(args, cfg):
     """Syncs Staging <-> Production servers depending on direction.
@@ -43,11 +45,12 @@ def run(args, cfg):
         exempt_paths += list(cfg["replacements"].get("world_names", {}).values())
 
     # Debug output to verify the setup before proceeding
-    print("Derived replacements dict:", replacements)
-    print("args.direction =", args.direction)
-    print("source_servers =", source_servers)
-    print("dest_servers =", dest_servers)
-    print("exempt paths =", exempt_paths)
+    print(clifmt.LIGHT_GRAY + "replacements dict =", replacements)
+    print(clifmt.LIGHT_GRAY + "args.direction =", args.direction)
+    print(clifmt.LIGHT_GRAY + "source_servers =", source_servers)
+    print(clifmt.LIGHT_GRAY + "dest_servers =", dest_servers)
+    print(clifmt.LIGHT_GRAY + "exempt paths =", exempt_paths)
+    print("")
 
     # Step 1: Sync files from source to destination unless we're in update-only mode
     if not args.update_only:
@@ -61,7 +64,8 @@ def run(args, cfg):
         update_config_files(dest_servers, replacements, exempt_paths, args.dry_run)
 
     # Step 3: Log or persist the timestamp of this sync operation
-    update_sync_timestamps(args, cfg)
+    if not args.dry_run:
+        update_sync_timestamps(args, cfg)
 
 
 def sync_server_files(source_servers, dest_servers, exempt_paths, dry_run):
@@ -70,7 +74,7 @@ def sync_server_files(source_servers, dest_servers, exempt_paths, dry_run):
     # Loop over each server name in the source server map
     for name in source_servers:
         # Construct full paths for source and destination directories
-        source_server_root = "/srv/daemon-data/" + source_servers[name]
+        source_server_root =  + source_servers[name]
         dest_server_root = "/srv/daemon-data/" + dest_servers.get(name, "")
 
         if not dest_server_root:
@@ -184,14 +188,14 @@ def update_config_files(dest_servers, replacements, exempt_paths, dry_run):
 
     # Summarize how many files were updated or would be updated
     if dry_run:
-        print(f"Would have updated {count} files")
+        print(clifmt.BOLD + f"Would have updated " + clifmt.YELLOW + "{count} files" + clifmt.BOLD)
     else:
-        print(f"Updated {count} files")
+        print(clifmt.BOLD + f"Updated " + clifmt.GREEN + " {count} files" + clifmt.BOLD)
 
 
 def process_config_file(path, replacements, exempt_paths, dry_run):
     """Apply replacements to a config file if changes are needed."""
-    
+
     # Open the file at 'path' and read its entire content.
     with open(path) as f:
         content = f.read()
@@ -209,27 +213,31 @@ def process_config_file(path, replacements, exempt_paths, dry_run):
 
     # Only continue if changes were made.
     if new_content != content:
+
+        # Resolve short path for concise console logging
+        short_path = path.removeprefix("/srv/daemon-data")
+
         # Check if the file's path should be exempted from processing.
         if is_excluded(exempt_paths, path):
             # If running in dry-run mode, print a message indicating that the file would be skipped.
             if dry_run:
-                print(
-                    f"[DRY RUN] Would skip updating {path} as it contains an excluded directory or filetype"
+                print(clifmt.DARK_GRAY +
+                    f"[DRY RUN] Would skip updating {short_path} as it contains an excluded directory or filetype"
                 )
             else:
                 # In non-dry-run mode, print a message that the file is being skipped.
-                print(
-                    f"Skipping {path} as it contains an excluded directory or filetype"
+                print(clifmt.DARK_GRAY +
+                    f"Skipping {short_path} as it contains an excluded directory or filetype"
                 )
         else:
             # If the file is not exempted and it's a dry-run, indicate that changes would be written.
             if dry_run:
-                print(
-                    f"[DRY RUN] Would write new content to {path} (changes: {', '.join(changes)})"
+                print(clifmt.YELLOW +
+                    f"[DRY RUN] Would write new content to {short_path} (changes: {', '.join(changes)})"
                 )
             else:
                 # Otherwise, write the new content back to the file and print an update message.
-                print(f"Writing new content to {path} (changes: {', '.join(changes)})")
+                print(clifmt.GREEN +f"Writing new content to {short_path} (changes: {', '.join(changes)})")
                 with open(path, "w") as f:
                     f.write(new_content)
             # Return True to indicate that changes were made.
@@ -255,14 +263,14 @@ def update_sync_timestamps(args, cfg):
 
     # Update 'meta' array with new timestamps
     cfg["meta"] = cfg.get("meta", {})
-    if args.direction == "down" and not args.dry_run:
+    if args.direction == "down":
         if not args.update_only:
             cfg["meta"]["last_pull_files"] = int(time.time())
         cfg["meta"]["last_pull_cfg"] = int(time.time())
         print(
             f"Updating config.yml with last pull timestamp: {cfg['meta']['last_pull_cfg']}"
         )
-    elif args.direction == "up" and not args.dry_run:
+    elif args.direction == "up":
         if not args.update_only:
             cfg["meta"]["last_push_files"] = int(time.time())
         cfg["meta"]["last_push_cfg"] = int(time.time())
