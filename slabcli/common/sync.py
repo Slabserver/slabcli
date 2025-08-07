@@ -168,14 +168,14 @@ def clear_directory_contents(directory, exempt_paths, dry_run):
 def update_config_files(dest_servers, replacements, exempt_paths, dry_run):
     """Apply replacements to config files in destination folders."""
 
-    print("Updating config files...")
+    print(clifmt.WHITE + "Updating config files...")
     count = 0  # Track how many files were (or would be) updated
 
     # Loop over each server name in the destination server map
     for name in dest_servers:
         # Construct the full path to the server's config files
         server_path = "/srv/daemon-data/" + dest_servers[name]
-        print("checking server: " + dest_servers[name])
+        print(clifmt.WHITE + "checking server: " + dest_servers[name])
 
         # Walk through all directories and files within the server path
         for root, dirs, files in os.walk(server_path):
@@ -188,9 +188,9 @@ def update_config_files(dest_servers, replacements, exempt_paths, dry_run):
 
     # Summarize how many files were updated or would be updated
     if dry_run:
-        print(clifmt.BOLD + f"Would have updated " + clifmt.YELLOW + "{count} files" + clifmt.BOLD)
+        print(clifmt.BOLD + "Would have updated " + clifmt.YELLOW + f"{count} files")
     else:
-        print(clifmt.BOLD + f"Updated " + clifmt.GREEN + " {count} files" + clifmt.BOLD)
+        print(clifmt.BOLD + "Updated " + clifmt.GREEN + f"{count} files")
 
 
 def process_config_file(path, replacements, exempt_paths, dry_run):
@@ -221,12 +221,12 @@ def process_config_file(path, replacements, exempt_paths, dry_run):
         if is_excluded(exempt_paths, path):
             # If running in dry-run mode, print a message indicating that the file would be skipped.
             if dry_run:
-                print(clifmt.DARK_GRAY +
+                print(clifmt.NEGATIVE +
                     f"[DRY RUN] Would skip updating {short_path} as it contains an excluded directory or filetype"
                 )
             else:
                 # In non-dry-run mode, print a message that the file is being skipped.
-                print(clifmt.DARK_GRAY +
+                print(clifmt.NEGATIVE +
                     f"Skipping {short_path} as it contains an excluded directory or filetype"
                 )
         else:
