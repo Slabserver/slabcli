@@ -5,7 +5,7 @@ import yaml
 from slabcli import config
 from slabcli.common.fmt import clifmt
 
-server_root = "/srv/daemon-data/"
+ptero_root = "/srv/daemon-data/"
 
 def run(args, cfg):
     """Syncs Staging <-> Production servers depending on direction.
@@ -76,7 +76,7 @@ def sync_server_files(source_servers, dest_servers, exempt_paths, dry_run):
     for name in source_servers:
         # Construct full paths for source and destination directories
         source_server_root =  + source_servers[name]
-        dest_server_root = "/srv/daemon-data/" + dest_servers.get(name, "")
+        dest_server_root = ptero_root + dest_servers.get(name, "")
 
         if not dest_server_root:
             print(f"Skipping {name}, no matching destination.")
@@ -175,7 +175,7 @@ def update_config_files(dest_servers, replacements, exempt_paths, dry_run):
     # Loop over each server name in the destination server map
     for name in dest_servers:
         # Construct the full path to the server's config files
-        server_path = "/srv/daemon-data/" + dest_servers[name]
+        server_path = ptero_root + dest_servers[name]
         print(clifmt.WHITE + "checking server: " + dest_servers[name])
 
         # Walk through all directories and files within the server path
@@ -193,7 +193,7 @@ def update_config_files(dest_servers, replacements, exempt_paths, dry_run):
 
     # Summarize how many files were updated or would be updated
     if dry_run:
-        print(clifmt.YELLOW + "Would have updated " + f"{count} " + f)
+        print(clifmt.YELLOW + "[DRY RUN] Would have updated " + f"{count} " + f)
     else:
         print(clifmt.GREEN + "Updated " + f"{count} " + f)
 
@@ -220,7 +220,7 @@ def process_config_file(path, replacements, exempt_paths, dry_run):
     if new_content != content:
 
         # Resolve short path for concise console logging
-        short_path = path.removeprefix("/srv/daemon-data")
+        short_path = path.removeprefix(ptero_root)
 
         # Check if the file's path should be exempted from processing.
         if is_excluded(exempt_paths, path):
