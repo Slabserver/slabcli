@@ -1,4 +1,4 @@
-from datetime import time
+import time as t
 from slabcli import config
 from slabcli.common import sync
 from slabcli.common.fmt import clifmt
@@ -7,7 +7,7 @@ abort_msg = clifmt.FAIL + "Aborting the SlabCLI 'push' operation"
 
 def add_arguments(parser):
     # parser.add_argument('--sync-worlds', action='store_true', help='Pull the Survival/Resource/Passage worlds from Staging to Production')
-    parser.add_argument('--dry-run', action='store_true', help='show what files and config changes would be pushed to Production')
+    parser.add_argument('--dry-run', action='store_true', help='show which files and config changes would be pushed to Production')
 
 def run(args):
     cfg = config.load_config()
@@ -33,4 +33,4 @@ def print_cmd_info(args, cfg):
 
     print('This is a very dangerous command to run accidentally - pausing for 11s to be very certain that this is what you want!')
 
-    time.sleep(11)
+    t.sleep(11)
