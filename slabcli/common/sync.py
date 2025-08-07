@@ -187,11 +187,15 @@ def update_config_files(dest_servers, replacements, exempt_paths, dry_run):
                     if process_config_file(path, replacements, exempt_paths, dry_run):
                         count += 1
 
+
+    # Setup ternary wording for print
+    f = "files" if count != 1 else "file"
+
     # Summarize how many files were updated or would be updated
     if dry_run:
-        print(clifmt.BOLD + "Would have updated " + clifmt.YELLOW + f"{count} files")
+        print(clifmt.YELLOW + "Would have updated " + f"{count} " + f)
     else:
-        print(clifmt.BOLD + "Updated " + clifmt.GREEN + f"{count} files")
+        print(clifmt.GREEN + "Updated " + f"{count} " + f)
 
 
 def process_config_file(path, replacements, exempt_paths, dry_run):
