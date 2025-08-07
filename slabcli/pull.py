@@ -1,8 +1,8 @@
 import hashlib
-from datetime import datetime, timezone
 from slabcli import config
 from slabcli.common import sync
 from slabcli.common.fmt import clifmt
+from datetime import datetime, timezone
 
 abort_msg = clifmt.FAIL + "Aborting the SlabCLI 'pull' operation"
 
