@@ -110,18 +110,19 @@ def sync_server_files(args, source_servers, dest_servers, allowed_prod_push_path
                 sync = False
 
                 # Skip copying if this path should be excluded
-                if args.direction == "down" and substring_in_path(exempt_paths, dest_path):
-                    if dry_run:
-                        print(clifmt.LIGHT_GRAY +
-                            f"[DRY RUN] Would skip copying {dest_path} as it contains an excluded directory or filetype"
-                        )
+                if args.direction == "down":
+                    if substring_in_path(exempt_paths, dest_path):
+                        if dry_run:
+                            print(clifmt.LIGHT_GRAY +
+                                f"[DRY RUN] Would skip copying {dest_path} as it contains an excluded directory or filetype"
+                            )
+                        else:
+                            print(clifmt.LIGHT_GRAY +
+                                f"Skipping copy of {dest_path} as it contains an excluded directory or filetype"
+                            )
+                        continue
                     else:
-                        print(clifmt.LIGHT_GRAY +
-                            f"Skipping copy of {dest_path} as it contains an excluded directory or filetype"
-                        )
-                    continue
-                else:
-                    sync = True
+                        sync = True
                 if args.direction == "up" and substring_in_path(allowed_prod_push_paths, dest_path):
                     sync = True
                 
@@ -269,7 +270,7 @@ def substring_in_path(substrings_to_check, path):
     
     for substring in substrings_to_check:
         if substring in path:
-            print("substring " + substring + "is in " + path)
+            print("substring " + substring + " is in " + path)
             return True
 
     return False
