@@ -104,7 +104,9 @@ def sync_server_files(args, source_servers, dest_servers, allowed_prod_push_path
                 rel_path = os.path.relpath(root, source_server_root)
                 # Build the equivalent destination path
                 dest_path = os.path.join(dest_server_root, rel_path)
-
+                dest_file = os.path.join(dest_path, file)
+                source_file = os.path.join(root, file)
+                
                 sync = False
 
                 # Skip copying if this path should be excluded
@@ -129,10 +131,7 @@ def sync_server_files(args, source_servers, dest_servers, allowed_prod_push_path
                     else:
                         # Create the destination directory if it doesn't exist
                         os.makedirs(dest_path, exist_ok=True)
-
                         # Copy each file from source to destination
-                        source_file = os.path.join(root, file)
-                        dest_file = os.path.join(dest_path, file)
                         print(f"Copying {source_file} -> {dest_file}")
                         shutil.copy2(source_file, dest_file)
 
