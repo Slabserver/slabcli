@@ -126,7 +126,7 @@ def sync_server_files(args, source_servers, dest_servers, allowed_prod_push_path
                     else:
                         sync = True
                 elif args.direction == "up":
-                    if substring_in_path(allowed_prod_push_paths, dest_path) and not is_exempt_path:
+                    if substring_in_path(allowed_prod_push_paths, dest_path) and not invalid_file_extension(file) and not is_exempt_path:
                         sync = True
                 
                 if sync:
@@ -150,7 +150,7 @@ def clear_directory_contents(directory, exempt_paths, dry_run):
         for file in files:
             path = os.path.join(root, file)
 
-            if substring_in_path(exempt_paths, path) or file.lower().endswith(".db"):
+            if substring_in_path(exempt_paths, path) or invalid_file_extension(file):
                 if dry_run:
                     print(clifmt.LIGHT_GRAY +
                         f"[DRY RUN] Would skip deleting {path} as it contains an excluded directory or filetype"
@@ -301,3 +301,12 @@ def update_sync_timestamps(args, cfg):
     config_path = config.get_config_path()
     with open(config_path, "w") as f:
         yaml.dump(cfg, f, default_flow_style=False)
+
+def invalid_file_extension(filename):
+    """
+    Return True if filename ends with one of the given extensions.
+    Case-insensitive.
+    
+    """
+    extensions = [".db", ".log", ".tmp"]
+    return filename.lower().endswith(tuple(ext.lower() for ext in extensions))
