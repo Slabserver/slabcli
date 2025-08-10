@@ -58,7 +58,7 @@ def run(args, cfg):
         sync_server_files(source_servers, dest_servers, exempt_paths, args.dry_run)
 
     # Step 2: Update server config files with replacements
-    if args.dry_run and args.sync_worlds:
+    if args.dry_run:
         # In dry run mode, no files are actually copied, so update the source instead
         update_config_files(source_servers, replacements, exempt_paths, args.dry_run)
     else:
@@ -134,12 +134,12 @@ def clear_directory_contents(directory, exempt_paths, dry_run):
         for file in files:
             path = os.path.join(root, file)
 
-            if is_excluded(exempt_paths, path) or file.lower().endswith(".db"):
-                if dry_run:
-                    print(clifmt.LIGHT_GRAY +
-                        f"[DRY RUN] Would skip {path} as it contains an excluded directory or filetype"
-                    )
-                continue
+            # if is_excluded(exempt_paths, path) or file.lower().endswith(".db"):
+            #     if dry_run:
+            #         print(clifmt.LIGHT_GRAY +
+            #             f"[DRY RUN] Would skip {path} as it contains an excluded directory or filetype"
+            #         )
+            #     continue
 
             # If not a dry run, delete the file; otherwise, just print what would happen
             if dry_run:
