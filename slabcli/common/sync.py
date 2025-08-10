@@ -45,9 +45,9 @@ def run(args, cfg):
         # This doesn't matter for pushing up, as only certain paths are whitelisted for that.
         exempt_paths += list(cfg["replacements"].get("world_names", {}).values())
 
-    # Build list of paths to include for push processing (e.g. server jar files or datapack and plugin paths)
-    # Supercedes exempt paths ONLY for pushing, as this is an explicitly defined 'ok' list for us to push up
-    allowed_prod_push_paths = list(cfg["replacements"].get("allowed_prod_push_paths", []))
+    # Build list of paths and filetypes to include for push processing (e.g. plugins and datapacks)
+    push_paths = list(cfg["replacements"].get("push_paths", []))
+    push_filetypes = list(cfg["replacements"].get("push_filetypes", []))
 
     if args.debug:
     # Debug output to verify the setup before proceeding
@@ -56,26 +56,28 @@ def run(args, cfg):
         print(clifmt.LIGHT_GRAY + "source_servers =", source_servers)
         print(clifmt.LIGHT_GRAY + "dest_servers =", dest_servers)
         print(clifmt.LIGHT_GRAY + "exempt paths =", exempt_paths)
-        print(clifmt.LIGHT_GRAY + "allowed prod sync paths =", allowed_prod_push_paths) 
+        print(clifmt.LIGHT_GRAY + "allowed prod sync paths =", push_paths) 
+        print(clifmt.LIGHT_GRAY + "allowed prod sync filetypes =", push_filetypes) 
+
         print("")
 
     # Step 1: Sync files from source to destination unless we're in update-only mode
     if not args.update_only:
-        sync_server_files(args, source_servers, dest_servers, allowed_prod_push_paths, exempt_paths, args.dry_run)
+        sync_server_files(args, source_servers, dest_servers, push_filetypes, push_paths, exempt_paths, args.dry_run)
 
     # Step 2: Update server config files with replacements
     if args.dry_run:
         # In dry run mode, no files are actually copied, so update the source instead
-        update_config_files(args, source_servers, replacements, allowed_prod_push_paths, exempt_paths, args.dry_run)
+        update_config_files(args, source_servers, replacements, push_filetypes, push_paths, exempt_paths, args.dry_run)
     else:
-        update_config_files(args, dest_servers, replacements, allowed_prod_push_paths, exempt_paths, args.dry_run)
+        update_config_files(args, dest_servers, replacements, push_filetypes, push_paths, exempt_paths, args.dry_run)
 
     # Step 3: Log or persist the timestamp of this sync operation
     if not args.dry_run:
         update_sync_timestamps(args, cfg)
 
 
-def sync_server_files(args, source_servers, dest_servers, allowed_prod_push_paths, exempt_paths, dry_run):
+def sync_server_files(args, source_servers, dest_servers, push_filetypes, push_paths, exempt_paths, dry_run):
     """Clear destination dirs and sync files from source."""
 
     # Loop over each server name in the source server map
@@ -126,8 +128,9 @@ def sync_server_files(args, source_servers, dest_servers, allowed_prod_push_path
                     else:
                         sync = True
                 elif args.direction == "up":
-                    if substring_in_path(allowed_prod_push_paths, dest_path) and not invalid_file_extension(file) and not is_exempt_path:
-                        sync = True
+                    if substring_in_path(push_paths, dest_path) or substring_in_path(push_filetypes, dest_path):
+                        if not invalid_file_extension(file) and not is_exempt_path:
+                            sync = True
                 
                 if sync:
                     if dry_run:
@@ -180,7 +183,7 @@ def clear_directory_contents(directory, exempt_paths, dry_run):
                     print(f"Could not remove non-empty or locked dir: {dir_path}")
 
 
-def update_config_files(args, dest_servers, replacements, exempt_paths, allowed_prod_push_paths, dry_run):
+def update_config_files(args, dest_servers, replacements, push_filetypes, push_paths, exempt_paths, dry_run):
     """Apply replacements to config files in destination folders."""
 
     print(clifmt.WHITE + "Updating config files...")
@@ -196,7 +199,7 @@ def update_config_files(args, dest_servers, replacements, exempt_paths, allowed_
         for root, dirs, files in os.walk(server_path):
             for filename in files:
                 if filename.endswith((".conf", ".txt, .properties", ".yml", "yaml")):
-                    if args.direction == "down" or (args.direction == "up" and substring_in_path(allowed_prod_push_paths, server_path)):
+                    if args.direction == "down" or (args.direction == "up" and (substring_in_path(push_paths, server_path) or (substring_in_path(push_filetypes, server_path)))):
                         path = os.path.join(root, filename)
                         # Attempt to process the file; increment count if it changed
                         if process_config_file(path, replacements, exempt_paths, dry_run):
