@@ -273,7 +273,6 @@ def substring_in_path(substrings_to_check, path):
     
     for substring in substrings_to_check:
         if substring in path:
-            print("substring " + substring + " is in " + path)
             return True
 
     return False
