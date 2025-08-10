@@ -55,7 +55,7 @@ def run(args, cfg):
 
     # Step 1: Sync files from source to destination unless we're in update-only mode
     if not args.update_only:
-        sync_server_files(source_servers, dest_servers, exempt_paths, args.dry_run)
+        sync_server_files(args, source_servers, dest_servers, exempt_paths, args.dry_run)
 
     # Step 2: Update server config files with replacements
     if args.dry_run:
@@ -69,7 +69,7 @@ def run(args, cfg):
         update_sync_timestamps(args, cfg)
 
 
-def sync_server_files(source_servers, dest_servers, exempt_paths, dry_run):
+def sync_server_files(args, source_servers, dest_servers, exempt_paths, dry_run):
     """Clear destination dirs and sync files from source."""
 
     # Loop over each server name in the source server map
@@ -86,7 +86,8 @@ def sync_server_files(source_servers, dest_servers, exempt_paths, dry_run):
             raise FileNotFoundError(f"Destination path does not exist: {dest_server_root}")
 
         # Clear the contents of the destination directory before syncing
-        clear_directory_contents(dest_server_root, exempt_paths, dry_run)
+        if args.direction == "down":
+            clear_directory_contents(dest_server_root, exempt_paths, dry_run)
 
         # If dry run, just print what would happen
         if dry_run:
@@ -134,15 +135,13 @@ def clear_directory_contents(directory, exempt_paths, dry_run):
         for file in files:
             path = os.path.join(root, file)
 
-            # if is_excluded(exempt_paths, path) or file.lower().endswith(".db"):
-            #     if dry_run:
-            #         print(clifmt.LIGHT_GRAY +
-            #             f"[DRY RUN] Would skip {path} as it contains an excluded directory or filetype"
-            #         )
-            #     continue
-
+            if is_excluded(exempt_paths, path) or file.lower().endswith(".db"):
+                if dry_run:
+                    print(clifmt.LIGHT_GRAY +
+                        f"[DRY RUN] Would skip {path} as it contains an excluded directory or filetype"
+                    )
             # If not a dry run, delete the file; otherwise, just print what would happen
-            if dry_run:
+            elif dry_run:
                 print(f"[DRY RUN] Would delete file: {path}")
             else:
                 os.remove(path)
