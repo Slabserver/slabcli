@@ -44,6 +44,10 @@ def run(args, cfg):
         # If world syncing is disabled, exclude all known world names from the replacement step
         exempt_paths += list(cfg["replacements"].get("world_names", {}).values())
 
+    # Build list of paths to include for push processing (e.g. server jar files or datapack and plugin paths)
+    # Supercedes exempt paths ONLY for pushing, as this is an explicitly defined 'ok' list for us to push up
+    allowed_prod_push_paths = list(cfg["replacements"].get("allowed_prod_push_paths", []))
+
     if args.debug:
     # Debug output to verify the setup before proceeding
         print(clifmt.LIGHT_GRAY + "replacements dict =", replacements)
@@ -51,25 +55,26 @@ def run(args, cfg):
         print(clifmt.LIGHT_GRAY + "source_servers =", source_servers)
         print(clifmt.LIGHT_GRAY + "dest_servers =", dest_servers)
         print(clifmt.LIGHT_GRAY + "exempt paths =", exempt_paths)
+        print(clifmt.LIGHT_GRAY + "allowed prod sync paths =", allowed_prod_push_paths) 
         print("")
 
     # Step 1: Sync files from source to destination unless we're in update-only mode
     if not args.update_only:
-        sync_server_files(args, source_servers, dest_servers, exempt_paths, args.dry_run)
+        sync_server_files(args, source_servers, dest_servers, allowed_prod_push_paths, exempt_paths, args.dry_run)
 
     # Step 2: Update server config files with replacements
     if args.dry_run:
         # In dry run mode, no files are actually copied, so update the source instead
-        update_config_files(source_servers, replacements, exempt_paths, args.dry_run)
+        update_config_files(args, source_servers, replacements, allowed_prod_push_paths, exempt_paths, args.dry_run)
     else:
-        update_config_files(dest_servers, replacements, exempt_paths, args.dry_run)
+        update_config_files(args, dest_servers, replacements, allowed_prod_push_paths, exempt_paths, args.dry_run)
 
     # Step 3: Log or persist the timestamp of this sync operation
     if not args.dry_run:
         update_sync_timestamps(args, cfg)
 
 
-def sync_server_files(args, source_servers, dest_servers, exempt_paths, dry_run):
+def sync_server_files(args, source_servers, dest_servers, allowed_prod_push_paths, exempt_paths, dry_run):
     """Clear destination dirs and sync files from source."""
 
     # Loop over each server name in the source server map
@@ -90,20 +95,20 @@ def sync_server_files(args, source_servers, dest_servers, exempt_paths, dry_run)
             clear_directory_contents(dest_server_root, exempt_paths, dry_run)
 
         # If dry run, just print what would happen
-        if dry_run:
-            print(f"[DRY RUN] Would copy {source_server_root} -> {dest_server_root}")
-        else:
-            print(f"Copying files from {source_server_root} to {dest_server_root}...")
+        print(f"Copying files from {source_server_root} to {dest_server_root}...")
 
-            # Walk through all directories and files in the source server path
-            for root, dirs, files in os.walk(source_server_root):
+        # Walk through all directories and files in the source server path
+        for root, dirs, files in os.walk(source_server_root):
+            for file in files:
                 # Get the path relative to the source root
                 rel_path = os.path.relpath(root, source_server_root)
                 # Build the equivalent destination path
                 dest_path = os.path.join(dest_server_root, rel_path)
 
+                sync = False
+
                 # Skip copying if this path should be excluded
-                if is_excluded(exempt_paths, dest_path):
+                if args.direction == "down" and substring_in_path(exempt_paths, dest_path):
                     if dry_run:
                         print(clifmt.LIGHT_GRAY +
                             f"[DRY RUN] Would skip copying {dest_path} as it contains an excluded directory or filetype"
@@ -114,11 +119,18 @@ def sync_server_files(args, source_servers, dest_servers, exempt_paths, dry_run)
                         )
                     continue
                 else:
-                    # Create the destination directory if it doesn't exist
-                    os.makedirs(dest_path, exist_ok=True)
+                    sync = True
+                if args.direction == "up" and substring_in_path(allowed_prod_push_paths, dest_path):
+                    sync = True
+                
+                if sync:
+                    if dry_run:
+                        print(f"[DRY RUN] Would copy {source_file} -> {dest_file}")
+                    else:
+                        # Create the destination directory if it doesn't exist
+                        os.makedirs(dest_path, exist_ok=True)
 
-                    # Copy each file from source to destination
-                    for file in files:
+                        # Copy each file from source to destination
                         source_file = os.path.join(root, file)
                         dest_file = os.path.join(dest_path, file)
                         print(f"Copying {source_file} -> {dest_file}")
@@ -135,10 +147,10 @@ def clear_directory_contents(directory, exempt_paths, dry_run):
         for file in files:
             path = os.path.join(root, file)
 
-            if is_excluded(exempt_paths, path) or file.lower().endswith(".db"):
+            if substring_in_path(exempt_paths, path) or file.lower().endswith(".db"):
                 if dry_run:
                     print(clifmt.LIGHT_GRAY +
-                        f"[DRY RUN] Would skip {path} as it contains an excluded directory or filetype"
+                        f"[DRY RUN] Would skip deleting {path} as it contains an excluded directory or filetype"
                     )
             # If not a dry run, delete the file; otherwise, just print what would happen
             elif dry_run:
@@ -151,7 +163,7 @@ def clear_directory_contents(directory, exempt_paths, dry_run):
             dir_path = os.path.join(root, dir)
 
             # Skip the directory if it's excluded
-            if is_excluded(exempt_paths, dir_path):
+            if substring_in_path(exempt_paths, dir_path):
                 continue
 
             # Attempt to remove the directory (only works if it's empty)
@@ -165,7 +177,7 @@ def clear_directory_contents(directory, exempt_paths, dry_run):
                     print(f"Could not remove non-empty or locked dir: {dir_path}")
 
 
-def update_config_files(dest_servers, replacements, exempt_paths, dry_run):
+def update_config_files(args, dest_servers, replacements, exempt_paths, allowed_prod_push_paths, dry_run):
     """Apply replacements to config files in destination folders."""
 
     print(clifmt.WHITE + "Updating config files...")
@@ -181,10 +193,11 @@ def update_config_files(dest_servers, replacements, exempt_paths, dry_run):
         for root, dirs, files in os.walk(server_path):
             for filename in files:
                 if filename.endswith((".conf", ".txt, .properties", ".yml", "yaml")):
-                    path = os.path.join(root, filename)
-                    # Attempt to process the file; increment count if it changed
-                    if process_config_file(path, replacements, exempt_paths, dry_run):
-                        count += 1
+                    if args.direction == "down" or (args.direction == "up" and substring_in_path(allowed_prod_push_paths, server_path)):
+                        path = os.path.join(root, filename)
+                        # Attempt to process the file; increment count if it changed
+                        if process_config_file(path, replacements, exempt_paths, dry_run):
+                            count += 1
 
 
     # Setup ternary wording for print
@@ -222,7 +235,7 @@ def process_config_file(path, replacements, exempt_paths, dry_run):
         short_path = path.removeprefix(ptero_root)
 
         # Check if the file's path should be exempted from processing.
-        if is_excluded(exempt_paths, path):
+        if substring_in_path(exempt_paths, path):
             # If running in dry-run mode, print a message indicating that the file would be skipped.
             if dry_run:
                 print(clifmt.LIGHT_GRAY +
@@ -250,7 +263,7 @@ def process_config_file(path, replacements, exempt_paths, dry_run):
     return False
 
 
-def is_excluded(exclude_substrings, path):
+def substring_in_path(exclude_substrings, path):
     """Loop through a list of substrings to determine if any substring is found within a directory path"""
 
     exclude_substrings = exclude_substrings or []  # empty list to avoid errors
