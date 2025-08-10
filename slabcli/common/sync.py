@@ -315,4 +315,5 @@ def invalid_file_extension(filename):
     return filename.lower().endswith(tuple(ext.lower() for ext in extensions))
 
 def valid_push_extension(filename, push_filetypes):
-        return filename.lower().endswith(tuple(ext.lower() for ext in push_filetypes))
+        extensions = [".jar", ".yml"]
+        return filename.lower().endswith(tuple(ext.lower() for ext in extensions))
