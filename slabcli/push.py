@@ -56,6 +56,6 @@ def print_cmd_info(args, cfg):
     print(clifmt.WARNING + 'This will push the current files and folders of Staging to Production, updating files with values defined in SlabCLI\'s config.yml')
     print(clifmt.BOLD + 'Please ensure Staging has been thoroughly tested, and that Production has very recent backups')
 
-    print('This is a very dangerous command to run accidentally - pausing for 20s to be very certain that this is what you want!')
+    print('This is a very dangerous command to run accidentally - pausing for 11s to be very certain that this is what you want!')
 
-    t.sleep(20)
+    t.sleep(11)

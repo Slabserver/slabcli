@@ -75,7 +75,7 @@ def sync_server_files(source_servers, dest_servers, exempt_paths, dry_run):
     # Loop over each server name in the source server map
     for name in source_servers:
         # Construct full paths for source and destination directories
-        source_server_root =  + source_servers[name]
+        source_server_root += source_servers[name]
         dest_server_root = ptero_root + dest_servers.get(name, "")
 
         if not dest_server_root:
