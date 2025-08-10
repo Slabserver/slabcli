@@ -7,8 +7,10 @@ from datetime import datetime, timezone
 abort_msg = clifmt.FAIL + "Aborting the SlabCLI 'push' operation"
 
 def add_arguments(parser):
-    # parser.add_argument('--sync-worlds', action='store_true', help='Pull the Survival/Resource/Passage worlds from Staging to Production')
+    parser.add_argument('--debug', action='store_true', help='print internal config mappings for Staging and Production')
     parser.add_argument('--dry-run', action='store_true', help='show which files and config changes would be pushed to Production')
+    parser.add_argument('--update-only', action='store_true', help='push the config changes only, with no copying of files at all')
+    # parser.add_argument('--sync-worlds', action='store_true', help='Pull the Survival/Resource/Passage worlds from Staging to Production')
 
 def run(args):
     cfg = config.load_config()
@@ -33,6 +35,7 @@ def run(args):
         if y != "y":
             print(abort_msg)
             return
+    args.sync_worlds = False
     args.direction = "up"
     sync.run(args, cfg)
 
@@ -53,6 +56,6 @@ def print_cmd_info(args, cfg):
     print(clifmt.WARNING + 'This will push the current files and folders of Staging to Production, updating files with values defined in SlabCLI\'s config.yml')
     print(clifmt.BOLD + 'Please ensure Staging has been thoroughly tested, and that Production has very recent backups')
 
-    print('This is a very dangerous command to run accidentally - pausing for 11s to be very certain that this is what you want!')
+    print('This is a very dangerous command to run accidentally - pausing for 20s to be very certain that this is what you want!')
 
-    t.sleep(11)
+    t.sleep(20)
