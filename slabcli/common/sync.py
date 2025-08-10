@@ -40,8 +40,9 @@ def run(args, cfg):
 
     # Build list of paths to exclude from processing (e.g. world files or user-specified paths)
     exempt_paths = list(cfg["replacements"].get("exempt_paths", []))
-    if not args.sync_worlds:
+    if args.direction == "down" and not args.sync_worlds:
         # If world syncing is disabled, exclude all known world names from the replacement step
+        # This doesn't matter for pushing up, as only certain paths are whitelisted for that.
         exempt_paths += list(cfg["replacements"].get("world_names", {}).values())
 
     # Build list of paths to include for push processing (e.g. server jar files or datapack and plugin paths)
@@ -110,8 +111,9 @@ def sync_server_files(args, source_servers, dest_servers, allowed_prod_push_path
                 sync = False
 
                 # Skip copying if this path should be excluded
+                is_exempt_path = substring_in_path(exempt_paths, dest_path)
                 if args.direction == "down":
-                    if substring_in_path(exempt_paths, dest_path):
+                    if is_exempt_path:
                         if dry_run:
                             print(clifmt.LIGHT_GRAY +
                                 f"[DRY RUN] Would skip copying {dest_path} as it contains an excluded directory or filetype"
@@ -123,8 +125,9 @@ def sync_server_files(args, source_servers, dest_servers, allowed_prod_push_path
                         continue
                     else:
                         sync = True
-                if args.direction == "up" and substring_in_path(allowed_prod_push_paths, dest_path):
-                    sync = True
+                elif args.direction == "up":
+                    if substring_in_path(allowed_prod_push_paths, dest_path) and not is_exempt_path:
+                        sync = True
                 
                 if sync:
                     if dry_run:
