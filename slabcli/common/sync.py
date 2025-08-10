@@ -153,7 +153,7 @@ def clear_directory_contents(args, directory, push_paths, exempt_paths, dry_run)
             path = os.path.join(root, file)
 
             # Skip the directory if it's not a file in a dir that will be pushed to
-            if args.direction == "up" and substring_in_path(push_paths, path):
+            if args.direction == "up" and not substring_in_path(push_paths, path):
                 continue
 
             if substring_in_path(exempt_paths, path) or invalid_file_extension(file):
@@ -172,9 +172,8 @@ def clear_directory_contents(args, directory, push_paths, exempt_paths, dry_run)
             dir_path = os.path.join(root, dir)
 
             # Skip the directory if it's not a path that will be pushed to
-            if args.direction == "up" and substring_in_path(push_paths, dir_path):
+            if args.direction == "up" and not substring_in_path(push_paths, dir_path):
                 continue
-
 
             # Skip the directory if it's excluded
             if substring_in_path(exempt_paths, dir_path):
