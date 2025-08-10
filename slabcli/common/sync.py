@@ -94,8 +94,7 @@ def sync_server_files(args, source_servers, dest_servers, push_filetypes, push_p
             raise FileNotFoundError(f"Destination path does not exist: {dest_server_root}")
 
         # Clear the contents of the destination directory before syncing
-        if args.direction == "down":
-            clear_directory_contents(dest_server_root, exempt_paths, dry_run)
+        clear_directory_contents(args, dest_server_root, push_paths, exempt_paths, dry_run)
 
         # If dry run, just print what would happen
         print(f"Copying files from {source_server_root} to {dest_server_root}...")
@@ -143,7 +142,7 @@ def sync_server_files(args, source_servers, dest_servers, push_filetypes, push_p
                         shutil.copy2(source_file, dest_file)
 
 
-def clear_directory_contents(directory, exempt_paths, dry_run):
+def clear_directory_contents(args, directory, push_paths, exempt_paths, dry_run):
     """Remove all files/dirs inside `directory`, skipping any path that contains an excluded substring."""
 
     # Walk the directory tree from bottom to top so files are removed before their parent directories
@@ -167,6 +166,11 @@ def clear_directory_contents(directory, exempt_paths, dry_run):
         # Process each subdirectory in the current directory
         for dir in dirs:
             dir_path = os.path.join(root, dir)
+
+            # Skip the directory if it's not valid for a push
+            if args.direction == "up" and not substring_in_path(push_paths, file):
+                continue
+
 
             # Skip the directory if it's excluded
             if substring_in_path(exempt_paths, dir_path):
