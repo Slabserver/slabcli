@@ -128,7 +128,7 @@ def sync_server_files(args, source_servers, dest_servers, push_filetypes, push_p
                     else:
                         sync = True
                 elif args.direction == "up":
-                    if substring_in_path(push_paths, dest_path) or substring_in_path(push_filetypes, dest_path):
+                    if substring_in_path(push_paths, dest_path) or valid_push_extension(dest_path, push_filetypes):
                         if not invalid_file_extension(file) and not is_exempt_path:
                             sync = True
                 
@@ -199,7 +199,7 @@ def update_config_files(args, dest_servers, replacements, push_filetypes, push_p
         for root, dirs, files in os.walk(server_path):
             for filename in files:
                 if filename.endswith((".conf", ".txt, .properties", ".yml", "yaml")):
-                    if args.direction == "down" or (args.direction == "up" and (substring_in_path(push_paths, server_path) or (substring_in_path(push_filetypes, server_path)))):
+                    if args.direction == "down" or (args.direction == "up" and (substring_in_path(push_paths, server_path) or (valid_push_extension(server_path, push_filetypes)))):
                         path = os.path.join(root, filename)
                         # Attempt to process the file; increment count if it changed
                         if process_config_file(path, replacements, exempt_paths, dry_run):
@@ -313,3 +313,6 @@ def invalid_file_extension(filename):
     """
     extensions = [".db", ".log", ".tmp"]
     return filename.lower().endswith(tuple(ext.lower() for ext in extensions))
+
+def valid_push_extension(filename, push_filetypes):
+        return filename.lower().endswith(tuple(ext.lower() for ext in push_filetypes))
