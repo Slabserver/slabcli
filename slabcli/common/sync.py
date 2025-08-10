@@ -46,8 +46,8 @@ def run(args, cfg):
         exempt_paths += list(cfg["replacements"].get("world_names", {}).values())
 
     # Build list of paths and filetypes to include for push processing (e.g. plugins and datapacks)
-    push_paths = list(cfg["replacements"].get("push_paths", []))
-    push_filetypes = list(cfg["replacements"].get("push_filetypes", []))
+    push_paths = list(cfg["replacements"].get("allowed_prod_push_paths", []))
+    push_filetypes = list(cfg["replacements"].get("allowed_prod_push_filetypes", []))
 
     if args.debug:
     # Debug output to verify the setup before proceeding
