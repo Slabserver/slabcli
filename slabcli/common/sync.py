@@ -262,13 +262,14 @@ def process_config_file(path, replacements, exempt_paths, dry_run):
     return False
 
 
-def substring_in_path(exclude_substrings, path):
+def substring_in_path(substrings_to_check, path):
     """Loop through a list of substrings to determine if any substring is found within a directory path"""
 
-    exclude_substrings = exclude_substrings or []  # empty list to avoid errors
+    substrings_to_check = substrings_to_check or []  # empty list to avoid errors
     
-    for substring in exclude_substrings:
+    for substring in substrings_to_check:
         if substring in path:
+            print("substring " + substring + "is in " + path)
             return True
 
     return False
