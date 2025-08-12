@@ -127,7 +127,7 @@ def sync_server_files(args, source_servers, dest_servers, push_filetypes, push_p
                     else:
                         sync = True
                 elif args.direction == "up":
-                    if substring_in_path(push_paths, dest_path) or valid_push_extension(file, push_filetypes):
+                    if substring_in_path(push_paths, dest_path) or valid_push_extension(file, push_filetypes) or valid_push_file(file):
                         if not invalid_file_extension(file) and not is_exempt_path:
                             sync = True
 
@@ -158,6 +158,7 @@ def clear_directory_contents(args, directory, push_paths, exempt_paths, dry_run)
                 # Explicitly allow .jar files in /plugins
                 if is_plugins_folder and file.lower().endswith(".jar"):
                     pass
+
                 # Otherwise, skip if path not in push_paths
                 elif not substring_in_path(push_paths, path):
                     continue
@@ -271,7 +272,7 @@ def process_config_file(path, replacements, exempt_paths, dry_run):
             # If the file is not exempted and it's a dry-run, indicate that changes would be written.
             if dry_run:
                 print(clifmt.YELLOW +
-                    f"[DRY RUN] Would write new content to {short_path} (changes: {', '.join(changes)})"
+                    f"[DRY RUN] Would write new content to {short_path} (but prod) (changes: {', '.join(changes)})"
                 )
             else:
                 # Otherwise, write the new content back to the file and print an update message.
@@ -332,3 +333,8 @@ def invalid_file_extension(filename):
 def valid_push_extension(filename, push_filetypes):
         extensions = [".jar", ".yml"]
         return filename.lower().endswith(tuple(ext.lower() for ext in extensions))
+
+def valid_push_file(filename):
+        # very hacky, pls fix
+        allowed_files = ["The-Passage.zip", "devs.zip"]
+        return filename in allowed_files
