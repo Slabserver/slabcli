@@ -41,7 +41,7 @@ def run(args):
                 print(abort_msg)
                 return
         
-    args.direction = "down"
+    args.direction = sync.PULL
     sync.run(args, cfg)
 
 def print_cmd_info(args, cfg):

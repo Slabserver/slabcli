@@ -39,7 +39,7 @@ def run(args):
                 print(abort_msg)
                 return
     args.sync_worlds = False
-    args.direction = "up"
+    args.direction = sync.PUSH
     sync.run(args, cfg)
 
 def print_cmd_info(args, cfg):

@@ -6,31 +6,37 @@ from slabcli import config
 from slabcli.common.fmt import clifmt
 
 ptero_root = "/srv/daemon-data/"
+PUSH = "push"
+PULL = "pull"
 
 def run(args, cfg):
     """Syncs Staging <-> Production servers depending on direction.
 
     This function performs two main steps:
-    1. Sync files from source to destination servers based on the given direction ("up" or "down").
+    1. Sync files from source to destination servers based on the given direction (PUSH or PULL).
     2. Apply config replacements from config.yml to ensure servers are set up correctly post-sync.
     """
 
     # Determine source and destination servers and their replacement mappings,
-    # based on sync direction ("up" = staging → production, "down" = production → staging).
-    if args.direction == "up":
+    # based on sync direction (PUSH = staging → production, PULL = production → staging).
+    if args.direction == PUSH:
         source_servers = cfg["servers"].get("staging", {})
         dest_servers = cfg["servers"].get("prod", {})
         replacements, missing_keys = config.compute_config_replacements(
             cfg["replacements"].get("prod", {}),
             cfg["replacements"].get("staging", {})
         )
-    elif args.direction == "down":
+        # Build list of paths to exclude from processing (e.g. world files or user-specified paths)
+        exempt_paths = list(cfg["replacements"].get("exempt_push_paths", []))
+    elif args.direction == PULL:
         source_servers = cfg["servers"].get("prod", {})
         dest_servers = cfg["servers"].get("staging", {})
         replacements, missing_keys = config.compute_config_replacements(
             cfg["replacements"].get("staging", {}),
             cfg["replacements"].get("prod", {})
         )
+        # Build list of paths to exclude from processing (e.g. world files or user-specified paths)
+        exempt_paths = list(cfg["replacements"].get("exempt_pull_paths", []))
     else:
         raise ValueError(f"Unknown direction: {args.direction}")
 
@@ -38,16 +44,15 @@ def run(args, cfg):
     if missing_keys:
         raise ValueError("Cannot update servers: missing replacement keys in config.yml")
 
-    # Build list of paths to exclude from processing (e.g. world files or user-specified paths)
-    exempt_paths = list(cfg["replacements"].get("exempt_paths", []))
-    if args.direction == "down" and not args.sync_worlds:
         # If world syncing is disabled, exclude all known world names from the replacement step
         # This doesn't matter for pushing up, as only certain paths are whitelisted for that.
+    if not args.sync_worlds:
         exempt_paths += list(cfg["replacements"].get("world_names", {}).values())
 
     # Build list of paths and filetypes to include for push processing (e.g. plugins and datapacks)
-    push_paths = list(cfg["replacements"].get("allowed_prod_push_paths", []))
-    push_filetypes = list(cfg["replacements"].get("allowed_prod_push_filetypes", []))
+    push_paths = list(cfg["replacements"].get("allowed_push_paths", []))
+    push_files = list(cfg["replacements"].get("allowed_push_files", []))
+    push_filetypes = list(cfg["replacements"].get("allowed_push_filetypes", []))
 
     if args.debug:
     # Debug output to verify the setup before proceeding
@@ -60,10 +65,11 @@ def run(args, cfg):
         print(clifmt.LIGHT_GRAY + "allowed prod sync filetypes =", push_filetypes) 
 
         print("")
+        return
 
     # Step 1: Sync files from source to destination unless we're in update-only mode
     if not args.update_only:
-        sync_server_files(args, source_servers, dest_servers, push_filetypes, push_paths, exempt_paths, args.dry_run)
+        sync_server_files(args, source_servers, dest_servers, push_filetypes, push_paths, push_files, exempt_paths, args.dry_run)
 
     # Step 2: Update server config files with replacements
     if args.dry_run:
@@ -77,7 +83,7 @@ def run(args, cfg):
         update_sync_timestamps(args, cfg)
 
 
-def sync_server_files(args, source_servers, dest_servers, push_filetypes, push_paths, exempt_paths, dry_run):
+def sync_server_files(args, source_servers, dest_servers, push_filetypes, push_paths, push_files, exempt_paths, dry_run):
     """Clear destination dirs and sync files from source."""
 
     # Loop over each server name in the source server map
@@ -94,7 +100,8 @@ def sync_server_files(args, source_servers, dest_servers, push_filetypes, push_p
             raise FileNotFoundError(f"Destination path does not exist: {dest_server_root}")
 
         # Clear the contents of the destination directory before syncing
-        clear_directory_contents(args, dest_server_root, push_paths, exempt_paths, dry_run)
+        if not args.update_only:
+            clear_directory_contents(args, dest_server_root, push_paths, exempt_paths, dry_run)
 
         # If dry run, just print what would happen
         print(f"Copying files from {source_server_root} to {dest_server_root}...")
@@ -113,21 +120,21 @@ def sync_server_files(args, source_servers, dest_servers, push_filetypes, push_p
 
                 # Skip copying if this path should be excluded
                 is_exempt_path = substring_in_path(exempt_paths, dest_path)
-                if args.direction == "down":
-                    if is_exempt_path:
-                        if dry_run:
-                            print(clifmt.LIGHT_GRAY +
-                                f"[DRY RUN] Would skip copying {dest_path} as it contains an excluded directory or filetype"
-                            )
-                        else:
-                            print(clifmt.LIGHT_GRAY +
-                                f"Skipping copy of {dest_path} as it contains an excluded directory or filetype"
-                            )
-                        continue
-                    else:
+                if args.direction == PULL:
+                    # if is_exempt_path:
+                    #     if dry_run:
+                    #         print(clifmt.LIGHT_GRAY +
+                    #             f"[DRY RUN] Would skip copying {dest_path} as it contains an excluded directory or filetype"
+                    #         )
+                    #     else:
+                    #         print(clifmt.LIGHT_GRAY +
+                    #             f"Skipping copy of {dest_path} as it contains an excluded directory or filetype"
+                    #         )
+                    #     continue
+                    # else:
                         sync = True
-                elif args.direction == "up":
-                    if substring_in_path(push_paths, dest_path) or valid_push_extension(file, push_filetypes) or valid_push_file(file):
+                elif args.direction == PUSH:
+                    if substring_in_path(push_paths, dest_path) or valid_push_extension(file, push_filetypes) or substring_in_path(push_files, file):
                         if not invalid_file_extension(file) and not is_exempt_path:
                             sync = True
 
@@ -142,63 +149,65 @@ def sync_server_files(args, source_servers, dest_servers, push_filetypes, push_p
                         shutil.copy2(source_file, dest_file)
 
 
-def clear_directory_contents(args, directory, push_paths, exempt_paths, dry_run):
+def clear_directory_contents(args, directory, push_paths, push_files, dry_run):
     """Remove all files/dirs inside `directory`, skipping any path that contains an excluded substring."""
 
-    # Walk the directory tree from bottom to top so files are removed before their parent directories
-    for root, dirs, files in os.walk(directory, topdown=False):
-
-        # Process each file in the current directory
-        for file in files:
-            path = os.path.join(root, file)
-
-            # Skip the directory if it's not a file in a dir that will be pushed to
-            if args.direction == "up":
-                is_plugins_folder = root.rstrip("/\\").endswith("/plugins") # Detect if we're inside a 'plugins' folder at this level
-                # Explicitly allow .jar files in /plugins
-                if is_plugins_folder and file.lower().endswith(".jar"):
-                    pass
-
-                # Otherwise, skip if path not in push_paths
-                elif not substring_in_path(push_paths, path):
-                    continue
-
-
-            # Skip exempt paths or invalid file extensions globally
-            if substring_in_path(exempt_paths, path) or invalid_file_extension(file):
-                if dry_run:
-                    print(clifmt.LIGHT_GRAY +
-                        f"[DRY RUN] Would skip deleting {path} as it contains an excluded directory or filetype"
-                    )
-            # If not a dry run, delete the file; otherwise, just print what would happen
-            elif dry_run:
-                print(f"[DRY RUN] Would delete file: {path.removeprefix(ptero_root)}")
-            else:
-                if args.direction == "up":
-                    print(f"Deleted file: {path.removeprefix(ptero_root)}")
-                os.remove(path)
-
-        # Process each subdirectory in the current directory
-        for dir in dirs:
-            dir_path = os.path.join(root, dir)
-
-            # Skip the directory if it's not a path that will be pushed to
-            if args.direction == "up" and not substring_in_path(push_paths, dir_path):
-                continue
-
-            # Skip the directory if it's excluded
-            if substring_in_path(exempt_paths, dir_path):
-                continue
-
-            # Attempt to remove the directory (only works if it's empty)
+    # If direction is PULL, just nuke everything inside
+    if args.direction == PULL:
+        for item in os.listdir(directory):
+            path = os.path.join(directory, item)
             if dry_run:
-                print(f"[DRY RUN] Would delete dir: {dir_path.removeprefix(ptero_root)}")
+                print(f"[DRY RUN] Would delete: {path.removeprefix(ptero_root)}")
             else:
-                try:
-                    print(f"Deleting dir: {dir_path}")
-                    os.rmdir(dir_path)
-                except OSError:
-                    print(f"Could not remove non-empty or locked dir: {dir_path.removeprefix(ptero_root)}")
+                print(f"Deleting: {path.removeprefix(ptero_root)}")
+                if os.path.isfile(path) or os.path.islink(path):
+                    print(f"Deleting file commented out for now")
+                    # os.remove(path)
+                elif os.path.isdir(path):
+                    print(f"Deleting path commented out for now")
+                    # shutil.rmtree(path)
+
+        return
+    
+    if args.direction == PUSH:
+
+        # Walk the directory tree from top to bottom so folders are removed first, and save us a bunch of print msgs
+        for root, dirs, files in os.walk(directory, topdown=True):
+            
+            # Process each subdirectory in the current directory
+            for dir in dirs:
+                dir_path = os.path.join(root, dir)
+
+                # Check if the directory is explicitly allowed to be deleted
+                if substring_in_path(push_paths, dir_path):
+
+                    # Attempt to remove the directory
+                    if dry_run:
+                        print(f"[DRY RUN] Would delete dir: {dir_path.removeprefix(ptero_root)}")
+                    else:
+                        try:
+                            print(f"Deleting directory: {dir_path}")
+                            print(f"Deleting directory commented out for now")
+                            # shutil.rmtree(dir_path)
+                        except OSError:
+                            print(f"Could not remove non-empty or locked dir: {dir_path.removeprefix(ptero_root)}")
+
+            # Process each file in the current directory
+            for file in files:
+                path = os.path.join(root, file)
+
+                # Skip the directory if it's not a file in a dir that will be pushed to
+                is_plugins_folder = root.rstrip("/\\").endswith("/plugins") # Detect if we're inside a 'plugins' folder at this level
+
+                # Check if the file is explicitly allowed to be deleted, or a .jar file within the /plugins dir
+                if substring_in_path(push_files, path) or (is_plugins_folder and file.lower().endswith(".jar")):
+                    # If not a dry run, delete the file; otherwise, just print what would happen
+                    if dry_run:
+                        print(f"[DRY RUN] Would delete file: {path.removeprefix(ptero_root)}")
+                    else:
+                        print(f"Deleted file: {path.removeprefix(ptero_root)}")
+                        print(f"Deleting file commented out for now")
+                        # os.remove(path)
 
 
 def update_config_files(args, dest_servers, replacements, push_filetypes, push_paths, exempt_paths, dry_run):
@@ -217,14 +226,13 @@ def update_config_files(args, dest_servers, replacements, push_filetypes, push_p
         for root, dirs, files in os.walk(server_path):
             for filename in files:
                 if filename.endswith((".conf", ".txt, .properties", ".yml", "yaml")):
-                    if args.direction == "down" or (args.direction == "up" and (substring_in_path(push_paths, server_path) or (valid_push_extension(filename, push_filetypes)))):
-                        path = os.path.join(root, filename)
-                        # Attempt to process the file; increment count if it changed
-                        if process_config_file(path, replacements, exempt_paths, dry_run):
-                            count += 1
+                    path = os.path.join(root, filename)
+                    # Attempt to process the file; increment count if it changed
+                    if process_config_file(path, replacements, exempt_paths, dry_run):
+                        count += 1
 
 
-    # Setup ternary wording for print
+    # Setup ternary vars for print
     f = "files" if count != 1 else "file"
 
     # Summarize how many files were updated or would be updated
@@ -291,33 +299,24 @@ def substring_in_path(substrings_to_check, path):
     """Loop through a list of substrings to determine if any substring is found within a directory path"""
 
     substrings_to_check = substrings_to_check or []  # empty list to avoid errors
-    
     for substring in substrings_to_check:
         if substring in path:
             return True
-
     return False
 
 
 def update_sync_timestamps(args, cfg):
     """Save timestamp info to our config file after a successful operation"""
 
-    # Update 'meta' array with new timestamps
+    sync_time = int(time.time())
     cfg["meta"] = cfg.get("meta", {})
-    if args.direction == "down":
-        if not args.update_only:
-            cfg["meta"]["last_pull_files"] = int(time.time())
-        cfg["meta"]["last_pull_cfg"] = int(time.time())
-        print(
-            f"Updating config.yml with last pull timestamp: {cfg['meta']['last_pull_cfg']}"
-        )
-    elif args.direction == "up":
-        if not args.update_only:
-            cfg["meta"]["last_push_files"] = int(time.time())
-        cfg["meta"]["last_push_cfg"] = int(time.time())
-        print(
-            f"Updating config.yml with last push timestamp: {cfg['meta']['last_push_cfg']}"
-        )
+    # Update 'meta' array in config file with new timestamps
+    cfg["meta"]["last_" + args.direction + "_cfg"] = sync_time
+    if not args.update_only:
+        cfg["meta"]["last_" + args.direction + "_files"] = sync_time
+    print(
+        f"Updating config.yml with last {args.direction} timestamp: {sync_time}"
+    )
     # Update config file with new 'meta' values
     config_path = config.get_config_path()
     with open(config_path, "w") as f:
@@ -332,11 +331,6 @@ def invalid_file_extension(filename):
     extensions = [".db", ".log", ".tmp"]
     return filename.lower().endswith(tuple(ext.lower() for ext in extensions))
 
-def valid_push_extension(filename, push_filetypes):
+def valid_push_extension(filename):
         extensions = [".jar", ".yml"]
         return filename.lower().endswith(tuple(ext.lower() for ext in extensions))
-
-def valid_push_file(filename):
-        # very hacky, pls fix
-        allowed_files = ["The-Passage.zip", "devs.zip"]
-        return filename in allowed_files
