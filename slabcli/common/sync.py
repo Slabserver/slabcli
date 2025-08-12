@@ -116,25 +116,12 @@ def sync_server_files(args, source_servers, dest_servers, push_filetypes, push_p
                 dest_file = os.path.join(dest_path, file)
                 source_file = os.path.join(root, file)
                 
-                sync = False
+                sync = True if args.direction == PULL else False
 
                 # Skip copying if this path should be excluded
-                is_exempt_path = substring_in_path(exempt_paths, dest_path)
-                if args.direction == PULL:
-                    # if is_exempt_path:
-                    #     if dry_run:
-                    #         print(clifmt.LIGHT_GRAY +
-                    #             f"[DRY RUN] Would skip copying {dest_path} as it contains an excluded directory or filetype"
-                    #         )
-                    #     else:
-                    #         print(clifmt.LIGHT_GRAY +
-                    #             f"Skipping copy of {dest_path} as it contains an excluded directory or filetype"
-                    #         )
-                    #     continue
-                    # else:
-                        sync = True
-                elif args.direction == PUSH:
+                if args.direction == PUSH:
                     if substring_in_path(push_paths, dest_path) or valid_push_extension(file, push_filetypes) or substring_in_path(push_files, file):
+                        is_exempt_path = substring_in_path(exempt_paths, dest_path)
                         if not invalid_file_extension(file) and not is_exempt_path:
                             sync = True
 
