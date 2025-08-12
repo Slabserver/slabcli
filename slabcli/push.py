@@ -10,10 +10,13 @@ def add_arguments(parser):
     parser.add_argument('--debug', action='store_true', help='print internal config mappings for Staging and Production')
     parser.add_argument('--dry-run', action='store_true', help='show which files and config changes would be pushed to Production')
     parser.add_argument('--update-only', action='store_true', help='push the config changes only, with no copying of files at all')
-    # parser.add_argument('--sync-worlds', action='store_true', help='Pull the Survival/Resource/Passage worlds from Staging to Production')
+    parser.add_argument('--skip-prompts', action='store_true', help='skips input prompt for SlabCLI. Useful for logging, but forces --dry-run to true')
 
 def run(args):
     cfg = config.load_config()
+
+    if args.skip_prompts:
+        args.dry_run = True
 
     print('')
     print(clifmt.HEADER + 'SlabCLI | push')
@@ -21,20 +24,20 @@ def run(args):
 
     print_cmd_info(args,cfg)
 
-    y = input("Are you sure you wish to continue? (y/N) ")
-    
-    if y != "y":
-        print(abort_msg)
-        return
-    if not args.dry_run:
-        print(clifmt.WARNING + "Please ensure the SMP servers are powered off prior to running any push operation, to avoid any potential errors")
-        print(clifmt.WARNING + "(Running the " + clifmt.WHITE + "/stop server:SMPtNetwork" + clifmt.WARNING + " modbot command in our Discord is typically the fastest way)")
-        print('')
-        
-        y = input(clifmt.WHITE + "Are the Proxy/Survival/Resource/Passage SMP servers powered off? (y/N) ")
+    if not args.skip_prompts:
+        y = input("Are you sure you wish to continue? (y/N) ")
         if y != "y":
             print(abort_msg)
             return
+        if not args.dry_run:
+            print(clifmt.WARNING + "Please ensure the SMP servers are powered off prior to running any push operation, to avoid any potential errors")
+            print(clifmt.WARNING + "(Running the " + clifmt.WHITE + "/stop server:SMPtNetwork" + clifmt.WARNING + " modbot command in our Discord is typically the fastest way)")
+            print('')
+            
+            y = input(clifmt.WHITE + "Are the Proxy/Survival/Resource/Passage SMP servers powered off? (y/N) ")
+            if y != "y":
+                print(abort_msg)
+                return
     args.sync_worlds = False
     args.direction = "up"
     sync.run(args, cfg)

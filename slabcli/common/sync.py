@@ -153,9 +153,17 @@ def clear_directory_contents(args, directory, push_paths, exempt_paths, dry_run)
             path = os.path.join(root, file)
 
             # Skip the directory if it's not a file in a dir that will be pushed to
-            if args.direction == "up" and not substring_in_path(push_paths, path):
-                continue
+            if args.direction == "up":
+                is_plugins_folder = root.rstrip("/\\").endswith("/plugins") # Detect if we're inside a 'plugins' folder at this level
+                # Explicitly allow .jar files in /plugins
+                if is_plugins_folder and file.lower().endswith(".jar"):
+                    pass
+                # Otherwise, skip if path not in push_paths
+                elif not substring_in_path(push_paths, path):
+                    continue
 
+
+            # Skip exempt paths or invalid file extensions globally
             if substring_in_path(exempt_paths, path) or invalid_file_extension(file):
                 if dry_run:
                     print(clifmt.LIGHT_GRAY +

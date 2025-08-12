@@ -12,9 +12,13 @@ def add_arguments(parser):
     parser.add_argument('--sync-worlds', action='store_true', help='pull the Survival/Resource/Passage worlds (disabled by default)')
     parser.add_argument('--update-only', action='store_true', help='pull the config changes only, with no copying of files at all')
     parser.add_argument('--force-reset', action='store_true', help='force Staging to be reset by Production even if .jar files differ')
+    parser.add_argument('--skip-prompts', action='store_true', help='skips input prompt for SlabCLI. Useful for logging, but forces --dry-run to true')
 
 def run(args):
     cfg = config.load_config()
+
+    if args.skip_prompts:
+        args.dry_run = True
     
     print('')
     print(clifmt.HEADER + 'SlabCLI | pull')
@@ -22,19 +26,20 @@ def run(args):
 
     print_cmd_info(args,cfg)
     
-    y = input(clifmt.WHITE + "Are you sure you wish to continue? (y/N) ")
-    if y != "y":
-        print(abort_msg)
-        return
-    if not args.dry_run:
-        print(clifmt.WARNING + "Please ensure the test servers are powered off prior to running any pull operation, to avoid any potential errors")
-        print(clifmt.WARNING + "(Running the " + clifmt.WHITE + "/stop server:TestNetwork" + clifmt.WARNING + " modbot command in our Discord is typically the fastest way)")
-        print('')
-        
-        y = input(clifmt.WHITE + "Are the Proxy/Survival/Resource/Passage test servers powered off? (y/N) ")
+    if not args.skip_prompts:
+        y = input(clifmt.WHITE + "Are you sure you wish to continue? (y/N) ")
         if y != "y":
             print(abort_msg)
             return
+        if not args.dry_run:
+            print(clifmt.WARNING + "Please ensure the test servers are powered off prior to running any pull operation, to avoid any potential errors")
+            print(clifmt.WARNING + "(Running the " + clifmt.WHITE + "/stop server:TestNetwork" + clifmt.WARNING + " modbot command in our Discord is typically the fastest way)")
+            print('')
+            
+            y = input(clifmt.WHITE + "Are the Proxy/Survival/Resource/Passage test servers powered off? (y/N) ")
+            if y != "y":
+                print(abort_msg)
+                return
         
     args.direction = "down"
     sync.run(args, cfg)
