@@ -101,8 +101,7 @@ def sync_server_files(args, source_servers, dest_servers, push_filetypes, push_p
             raise FileNotFoundError(f"Destination path does not exist: {dest_server_root}")
 
         # Clear the contents of the destination directory before syncing
-        if not args.update_only:
-            clear_directory_contents(args, dest_server_root, push_paths, exempt_paths, dry_run)
+        clear_directory_contents(args, dest_server_root, push_paths, exempt_paths, dry_run)
 
         # If dry run, just print what would happen
         print(f"Copying files from {source_server_root} to {dest_server_root}...")
