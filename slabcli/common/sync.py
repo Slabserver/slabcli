@@ -64,8 +64,9 @@ def run(args, cfg):
         print(clifmt.LIGHT_GRAY + "allowed prod sync paths =", push_paths) 
         print(clifmt.LIGHT_GRAY + "allowed prod sync files =", push_files) 
         print(clifmt.LIGHT_GRAY + "allowed prod sync filetypes =", push_filetypes) 
-
         print("")
+        print(clifmt.LIGHT_GRAY + "all =", cfg["replacements"]) 
+
         return
 
     # Step 1: Sync files from source to destination unless we're in update-only mode
