@@ -62,6 +62,7 @@ def run(args, cfg):
         print(clifmt.LIGHT_GRAY + "dest_servers =", dest_servers)
         print(clifmt.LIGHT_GRAY + "exempt paths =", exempt_paths)
         print(clifmt.LIGHT_GRAY + "allowed prod sync paths =", push_paths) 
+        print(clifmt.LIGHT_GRAY + "allowed prod sync files =", push_files) 
         print(clifmt.LIGHT_GRAY + "allowed prod sync filetypes =", push_filetypes) 
 
         print("")
