@@ -153,7 +153,6 @@ def clear_directory_contents(args, directory, push_paths, push_files, dry_run):
                 elif os.path.isdir(path):
                     print(f"Deleting path commented out for now")
                     # shutil.rmtree(path)
-
         return
     
     if args.direction == PUSH:
