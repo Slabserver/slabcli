@@ -14,6 +14,8 @@ def add_arguments(parser):
 
 def run(args):
     cfg = config.load_config()
+    args.direction = sync.PUSH
+    args.sync_worlds = False
 
     if args.skip_prompts:
         args.dry_run = True
@@ -21,6 +23,11 @@ def run(args):
     print('')
     print(clifmt.HEADER + 'SlabCLI | push')
     print('')
+
+    if args.debug:
+        sync.run(args, cfg)
+        print(abort_msg)
+        return
 
     print_cmd_info(args,cfg)
 
@@ -38,8 +45,7 @@ def run(args):
             if y != "y":
                 print(abort_msg)
                 return
-    args.sync_worlds = False
-    args.direction = sync.PUSH
+
     sync.run(args, cfg)
 
 def print_cmd_info(args, cfg):
