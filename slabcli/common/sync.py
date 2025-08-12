@@ -174,6 +174,8 @@ def clear_directory_contents(args, directory, push_paths, exempt_paths, dry_run)
             elif dry_run:
                 print(f"[DRY RUN] Would delete file: {path.removeprefix(ptero_root)}")
             else:
+                if args.direction == "up":
+                    print(f"[DRY RUN] Deleted file: {path.removeprefix(ptero_root)}")
                 os.remove(path)
 
         # Process each subdirectory in the current directory
