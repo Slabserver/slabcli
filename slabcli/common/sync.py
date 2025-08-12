@@ -105,7 +105,7 @@ def sync_server_files(args, source_servers, dest_servers, push_filetypes, push_p
                 # Get the path relative to the source root
                 rel_path = os.path.relpath(root, source_server_root)
                 # Build the equivalent destination path
-                dest_path = os.path.join(dest_server_root, rel_path)
+                dest_path = os.path.join(dest_server_root, '' if rel_path == '.' else rel_path) #os.path.relpath returns "." when the file is at the root folder itself
                 dest_file = os.path.join(dest_path, file)
                 source_file = os.path.join(root, file)
                 
@@ -130,15 +130,15 @@ def sync_server_files(args, source_servers, dest_servers, push_filetypes, push_p
                     if substring_in_path(push_paths, dest_path) or valid_push_extension(file, push_filetypes):
                         if not invalid_file_extension(file) and not is_exempt_path:
                             sync = True
-                
+
                 if sync:
                     if dry_run:
-                        print(f"[DRY RUN] Would copy {source_file} -> {dest_file}")
+                        print(f"[DRY RUN] Would copy {source_file.removeprefix(ptero_root)} -> {dest_file.removeprefix(ptero_root)}")
                     else:
                         # Create the destination directory if it doesn't exist
                         os.makedirs(dest_path, exist_ok=True)
                         # Copy each file from source to destination
-                        print(f"Copying {source_file} -> {dest_file}")
+                        print(f"Copying {source_file.removeprefix(ptero_root)} -> {dest_file.removeprefix(ptero_root)}")
                         shutil.copy2(source_file, dest_file)
 
 
