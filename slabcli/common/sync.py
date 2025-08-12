@@ -171,7 +171,7 @@ def clear_directory_contents(args, directory, push_paths, exempt_paths, dry_run)
                     )
             # If not a dry run, delete the file; otherwise, just print what would happen
             elif dry_run:
-                print(f"[DRY RUN] Would delete file: {path}")
+                print(f"[DRY RUN] Would delete file: {path.removeprefix(ptero_root)}")
             else:
                 os.remove(path)
 
@@ -189,13 +189,13 @@ def clear_directory_contents(args, directory, push_paths, exempt_paths, dry_run)
 
             # Attempt to remove the directory (only works if it's empty)
             if dry_run:
-                print(f"[DRY RUN] Would delete dir: {dir_path}")
+                print(f"[DRY RUN] Would delete dir: {dir_path.removeprefix(ptero_root)}")
             else:
                 try:
                     print(f"Deleting dir: {dir_path}")
                     os.rmdir(dir_path)
                 except OSError:
-                    print(f"Could not remove non-empty or locked dir: {dir_path}")
+                    print(f"Could not remove non-empty or locked dir: {dir_path.removeprefix(ptero_root)}")
 
 
 def update_config_files(args, dest_servers, replacements, push_filetypes, push_paths, exempt_paths, dry_run):
