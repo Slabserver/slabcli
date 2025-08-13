@@ -67,7 +67,7 @@ def run(args, cfg):
         sync_server_files(args, cfg, source_servers, dest_servers)
 
     # Step 2: Update server config files with any replacements
-        update_config_files(args, source_servers, dest_servers, replacements, exempt_paths)
+    update_config_files(args, source_servers, dest_servers, replacements, exempt_paths)
 
     # Step 3: Log or persist the timestamp of this sync operation
     if not args.dry_run:
@@ -268,7 +268,7 @@ def process_config_file(args, path, replacements, exempt_paths, source_server, d
             # If the file is not exempted and it's a dry-run, indicate that changes would be written.
             if args.dry_run:
                 print(clifmt.YELLOW +
-                    f"[DRY RUN] Would write new content to {print_path} (but prod) (changes: {', '.join(changes)})"
+                    f"[DRY RUN] Would write new content to {print_path} (changes: {', '.join(changes)})"
                 )
             else:
                 # Otherwise, write the new content back to the file and print an update message.
