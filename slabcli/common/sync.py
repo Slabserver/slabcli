@@ -97,7 +97,10 @@ def sync_server_files(args, cfg, source_servers, dest_servers, push_filetypes, p
             raise FileNotFoundError(f"Destination path does not exist: {dest_server_root}")
 
         # Clear the contents of the destination directory before syncing
-        clear_directory_contents(args, dest_server_root, push_paths, push_files, exempt_paths)
+        if args.direction == PULL:
+            clear_directory_pull(args, dest_server_root)
+        elif args.direction == PUSH:
+            clear_directory_push(args, dest_server_root, push_paths, push_files)
 
         print(f"Copying files from {source_server_root} to {dest_server_root}...")
 
@@ -136,66 +139,50 @@ def sync_server_files(args, cfg, source_servers, dest_servers, push_filetypes, p
                         shutil.copy2(source_file, dest_file)
 
 
-def clear_directory_contents(args, directory, push_paths, push_files, exempt_paths):
-    """Remove all files/dirs inside `directory`, skipping any path that contains an excluded substring."""
+def clear_directory_pull(args, directory):
+    """Remove all files/dirs inside `directory` when pulling (full wipe)."""
+    for item in os.listdir(directory):
+        path = os.path.join(directory, item)
+        if os.path.isfile(path) or os.path.islink(path):
+            if args.dry_run:
+                print(f"[DRY RUN] Would delete file: {path.removeprefix(ptero_root)}")
+            else:
+                print(f"Deleted file: {path.removeprefix(ptero_root)} (commented out)")
+                # os.remove(path)
+        elif os.path.isdir(path): 
+            if args.dry_run:
+                print(f"[DRY RUN] Would delete directory: {path.removeprefix(ptero_root)}/..")
+            else:
+                print(f"Deleted directory: {path.removeprefix(ptero_root)} (commented out)")
+                # shutil.rmtree(path)
 
-    # If direction is PULL, just nuke everything inside
-    if args.direction == PULL:
-        for item in os.listdir(directory):
-            path = os.path.join(directory, item)
-            if os.path.isfile(path) or os.path.islink(path):
+def clear_directory_push(args, directory, push_paths, push_files):
+    """Remove allowed files/dirs inside `directory` when pushing (selective delete)."""
+    for root, dirs, files in os.walk(directory, topdown=True):
+        
+        # Directories
+        for dir in dirs:
+            dir_path = os.path.join(root, dir)
+            if substring_in_path(push_paths, dir_path):
+                if args.dry_run:
+                    print(f"[DRY RUN] Would delete dir: {dir_path.removeprefix(ptero_root)}")
+                else:
+                    try:
+                        print(f"Deleted directory: {dir_path} (commented out)")
+                        # shutil.rmtree(dir_path)
+                    except OSError:
+                        print(f"Could not remove non-empty or locked dir: {dir_path.removeprefix(ptero_root)}")
+        
+        # Files
+        for file in files:
+            path = os.path.join(root, file)
+            is_plugins_folder = root.rstrip("/\\").endswith("/plugins")
+            if substring_in_path(push_files, path) or (is_plugins_folder and file.lower().endswith(".jar")):
                 if args.dry_run:
                     print(f"[DRY RUN] Would delete file: {path.removeprefix(ptero_root)}")
                 else:
-                    print(f"Deleting file commented out for now")
+                    print(f"Deleted file: {path.removeprefix(ptero_root)} (commented out)")
                     # os.remove(path)
-            elif os.path.isdir(path): 
-                if args.dry_run:
-                    print(f"[DRY RUN] Would delete directory: {path.removeprefix(ptero_root)}/..")
-                else:
-                    print(f"Deleting path commented out for now")
-                    # shutil.rmtree(path)
-        return
-    
-    if args.direction == PUSH:
-
-        # Walk the directory tree from top to bottom so folders are removed first, and save us a bunch of print msgs
-        for root, dirs, files in os.walk(directory, topdown=True):
-            
-            # Process each subdirectory in the current directory
-            for dir in dirs:
-                dir_path = os.path.join(root, dir)
-
-                # Check if the directory is explicitly allowed to be deleted
-                if substring_in_path(push_paths, dir_path):
-
-                    # Attempt to remove the directory
-                    if args.dry_run:
-                        print(f"[DRY RUN] Would delete dir: {dir_path.removeprefix(ptero_root)}")
-                    else:
-                        try:
-                            print(f"Deleting directory: {dir_path}")
-                            print(f"Deleting directory commented out for now")
-                            # shutil.rmtree(dir_path)
-                        except OSError:
-                            print(f"Could not remove non-empty or locked dir: {dir_path.removeprefix(ptero_root)}")
-
-            # Process each file in the current directory
-            for file in files:
-                path = os.path.join(root, file)
-
-                # Skip the directory if it's not a file in a dir that will be pushed to
-                is_plugins_folder = root.rstrip("/\\").endswith("/plugins") # Detect if we're inside a 'plugins' folder at this level
-
-                # Check if the file is explicitly allowed to be deleted, or a .jar file within the /plugins dir
-                if substring_in_path(push_files, path) or (is_plugins_folder and file.lower().endswith(".jar")):
-                    # If not a dry run, delete the file; otherwise, just print what would happen
-                    if args.dry_run:
-                        print(f"[DRY RUN] Would delete file: {path.removeprefix(ptero_root)}")
-                    else:
-                        print(f"Deleted file: {path.removeprefix(ptero_root)}")
-                        print(f"Deleting file commented out for now")
-                        # os.remove(path)
 
 
 def update_config_files(args, dest_servers, replacements, exempt_paths):
