@@ -116,13 +116,14 @@ def sync_server_files(args, source_servers, dest_servers, push_filetypes, push_p
                 dest_file = os.path.join(dest_path, file)
                 source_file = os.path.join(root, file)
                 
-                sync = True if args.direction == PULL else False
-
+                sync = False
+                
                 # Skip copying if this path should be excluded
+                if args.direction == PULL and not substring_in_path(exempt_paths, dest_path):
+                    sync = True
                 if args.direction == PUSH:
                     if substring_in_path(push_paths, dest_path) or valid_push_extension(file, push_filetypes) or substring_in_path(push_files, file):
-                        is_exempt_path = substring_in_path(exempt_paths, dest_path)
-                        if not is_exempt_path:
+                        if not substring_in_path(exempt_paths, dest_path):
                             sync = True
 
                 if sync:
