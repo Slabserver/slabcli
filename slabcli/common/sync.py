@@ -88,11 +88,7 @@ def sync_pull(args, cfg, source_server_root, dest_server_root):
 
     if args.dry_run:
         print(f"[DRY RUN] Would copy entire directory {src_rel} -> {dst_rel}")
-        for item in os.listdir(source_server_root):
-            rel_item = os.path.join(source_server_root, item).removeprefix(ptero_root)
-            suffix = "/" if os.path.isdir(os.path.join(source_server_root, item)) else ""
-            print(f"  {rel_item}{suffix}")
-        print("  ...and all nested contents")
+        print_directory_listing(source_server_root)
     else:
         print(f"Copying entire directory {src_rel} -> {dst_rel} (commented out)")
         # shutil.copytree(source_server_root, dest_server_root, dirs_exist_ok=True)
@@ -148,22 +144,32 @@ def sync_server_files(args, cfg, source_servers, dest_servers):
             sync_push(args, cfg, source_server_root, dest_server_root)
 
 
+def print_directory_listing(base_dir):
+    for item in os.listdir(base_dir):
+        full_path = os.path.join(base_dir, item)
+        suffix = "/..." if os.path.isdir(full_path) else ""
+        print(f"  {full_path.removeprefix(ptero_root)}{suffix}")
+    
 def clear_directory_pull(args, directory):
     """Remove all files/dirs inside `directory` when pulling (full wipe)."""
-    for item in os.listdir(directory):
-        path = os.path.join(directory, item)
-        if os.path.isfile(path) or os.path.islink(path):
-            if args.dry_run:
-                print(f"[DRY RUN] Would delete file: {path.removeprefix(ptero_root)}")
-            else:
-                print(f"Deleted file: {path.removeprefix(ptero_root)} (commented out)")
+    rel_base = directory.removeprefix(ptero_root)
+
+    if args.dry_run:
+        print(f"[DRY RUN] Would delete entire contents of {rel_base}")
+    else:
+        print(f"Deleting entire contents of {rel_base} (commented out)")
+
+    print_directory_listing(directory)
+
+    if not args.dry_run:
+        for item in os.listdir(directory):
+            path = os.path.join(directory, item)
+            if os.path.isfile(path) or os.path.islink(path):
                 # os.remove(path)
-        elif os.path.isdir(path): 
-            if args.dry_run:
-                print(f"[DRY RUN] Would delete directory: {path.removeprefix(ptero_root)}/..")
-            else:
-                print(f"Deleted directory: {path.removeprefix(ptero_root)} (commented out)")
+                pass
+            elif os.path.isdir(path):
                 # shutil.rmtree(path)
+                pass
 
 def clear_directory_push(args, directory, push_paths, push_files):
     """Remove allowed files/dirs inside `directory` when pushing (selective delete)."""
