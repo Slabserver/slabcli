@@ -20,25 +20,24 @@ def run(args, cfg):
     # Determine source and destination servers and their replacement mappings,
     # based on sync direction (PUSH = staging → production, PULL = production → staging).
     if args.direction == PUSH:
-        source_servers = cfg["servers"].get("staging", {})
-        dest_servers = cfg["servers"].get("prod", {})
-        replacements, missing_keys = config.compute_config_replacements(
-            cfg["replacements"].get("prod", {}),
-            cfg["replacements"].get("staging", {})
-        )
+        source = "staging"
+        dest = "prod"
         # Build list of paths to exclude from processing (e.g. world files or user-specified paths)
         exempt_paths = list(cfg["replacements"].get("exempt_push_paths", []))
     elif args.direction == PULL:
-        source_servers = cfg["servers"].get("prod", {})
-        dest_servers = cfg["servers"].get("staging", {})
-        replacements, missing_keys = config.compute_config_replacements(
-            cfg["replacements"].get("staging", {}),
-            cfg["replacements"].get("prod", {})
-        )
+        source = "prod"
+        dest = "staging"
         # Build list of paths to exclude from processing (e.g. world files or user-specified paths)
         exempt_paths = list(cfg["replacements"].get("exempt_pull_paths", []))
     else:
         raise ValueError(f"Unknown direction: {args.direction}")
+    
+    source_servers = cfg["servers"].get(source, {})
+    dest_servers = cfg["servers"].get(dest, {})
+    replacements, missing_keys = config.compute_config_replacements(
+        cfg["replacements"].get(source, {}),
+        cfg["replacements"].get(dest, {})
+    )
 
     # Validate that all necessary replacement keys are present
     if missing_keys:
@@ -66,7 +65,7 @@ def run(args, cfg):
 
     # Step 1: Sync files from source to destination unless we're in update-only mode
     if not args.update_only:
-        sync_server_files(args, cfg, source_servers, dest_servers, push_filetypes, push_paths, push_files, exempt_paths, world_names)
+        sync_server_files(args, cfg, source_servers, dest_servers)
 
     # Step 2: Update server config files with replacements
     if args.dry_run:
@@ -80,63 +79,73 @@ def run(args, cfg):
         update_sync_timestamps(args, cfg)
 
 
-def sync_server_files(args, cfg, source_servers, dest_servers, push_filetypes, push_paths, push_files, exempt_paths, world_names):
-    """Clear destination dirs and sync files from source."""
+def sync_pull(args, source_server_root, dest_server_root):
+    """Sync an entire server directory from source to destination for PULL direction."""
+    clear_directory_pull(args, dest_server_root)
 
-    # Loop over each server name in the source server map
+    src_rel = source_server_root.removeprefix(ptero_root)
+    dst_rel = dest_server_root.removeprefix(ptero_root)
+
+    if args.dry_run:
+        print(f"[DRY RUN] Would copy entire directory {src_rel} -> {dst_rel}")
+        for item in os.listdir(source_server_root):
+            rel_item = os.path.join(source_server_root, item).removeprefix(ptero_root)
+            suffix = "/" if os.path.isdir(os.path.join(source_server_root, item)) else ""
+            print(f"  {rel_item}{suffix}")
+        print("  ...and all nested contents")
+    else:
+        print(f"Copying entire directory {src_rel} -> {dst_rel} (commented out)")
+        # shutil.copytree(source_server_root, dest_server_root, dirs_exist_ok=True)
+
+
+def sync_push(args, cfg, source_server_root, dest_server_root):
+    """Sync selected files from source to destination for PUSH direction."""
+    push_paths = list(cfg["replacements"].get("allowed_push_paths", []))
+    push_files = list(cfg["replacements"].get("allowed_push_files", []))
+    push_filetypes = list(cfg["replacements"].get("allowed_push_filetypes", []))
+
+    clear_directory_push(args, dest_server_root, push_paths, push_files)
+
+    for root, dirs, files in os.walk(source_server_root):
+        rel_path = os.path.relpath(root, source_server_root)
+        dest_path = os.path.join(dest_server_root, '' if rel_path == '.' else rel_path)
+
+        for file in files:
+            source_file = os.path.join(root, file)
+            dest_file = os.path.join(dest_path, file)
+
+            if should_push_file(dest_path, file, push_paths, push_filetypes, push_files):
+                if args.dry_run:
+                    print(f"[DRY RUN] Would copy {source_file.removeprefix(ptero_root)} -> {dest_file.removeprefix(ptero_root)}")
+                else:
+                    print(f"Copying {source_file.removeprefix(ptero_root)} -> {dest_file.removeprefix(ptero_root)} (commented out)")
+                    # os.makedirs(dest_path, exist_ok=True)
+                    # shutil.copy2(source_file, dest_file)
+
+
+def should_push_file(path, file, push_paths, push_filetypes, push_files):
+    """Return True if a file should be pushed based on path, extension, and exemption rules."""
+    if substring_in_path(push_paths, path) or substring_in_path(push_files, file) or has_file_extension(file, push_filetypes):
+        return True
+    return False
+
+
+def sync_server_files(args, cfg, source_servers, dest_servers):
+    """Dispatch sync by direction (PULL or PUSH)."""
     for name in source_servers:
-        # Construct full paths for source and destination directories
         source_server_root = ptero_root + source_servers[name]
         dest_server_root = ptero_root + dest_servers.get(name, "")
 
         if not dest_server_root:
             print(f"Skipping {name}, no matching destination.")
             continue
-
         if not os.path.exists(dest_server_root):
             raise FileNotFoundError(f"Destination path does not exist: {dest_server_root}")
 
-        # Clear the contents of the destination directory before syncing
         if args.direction == PULL:
-            clear_directory_pull(args, dest_server_root)
+            sync_pull(args, cfg, source_server_root, dest_server_root)
         elif args.direction == PUSH:
-            clear_directory_push(args, dest_server_root, push_paths, push_files)
-
-        print(f"Copying files from {source_server_root} to {dest_server_root}...")
-
-        # Walk through all directories and files in the source server path
-        for root, dirs, files in os.walk(source_server_root):
-            for file in files:
-                # Get the path relative to the source root
-                rel_path = os.path.relpath(root, source_server_root)
-                # Build the equivalent destination path
-                dest_path = os.path.join(dest_server_root, '' if rel_path == '.' else rel_path) #os.path.relpath returns "." when the file is at the root folder itself
-                dest_file = os.path.join(dest_path, file)
-                source_file = os.path.join(root, file)
-                
-                sync = True if args.direction == PULL else False
-                
-                # Skip copying if this path should be excluded
-                # if args.direction == PULL:
-                #     if args.sync_worlds:
-                #         sync = True
-                #     else:
-                #         world_names += list(cfg["replacements"].get("world_names", {}).values())
-                #         sync = substring_in_path(world_names, dest_path)
-                if args.direction == PUSH:
-                    if substring_in_path(push_paths, dest_path) or valid_push_extension(file, push_filetypes) or substring_in_path(push_files, file):
-                        if not substring_in_path(exempt_paths, dest_path):
-                            sync = True
-
-                if sync:
-                    if args.dry_run:
-                        print(f"[DRY RUN] Would copy {source_file.removeprefix(ptero_root)} -> {dest_file.removeprefix(ptero_root)}")
-                    else:
-                        # Create the destination directory if it doesn't exist
-                        os.makedirs(dest_path, exist_ok=True)
-                        # Copy each file from source to destination
-                        print(f"Copying {source_file.removeprefix(ptero_root)} -> {dest_file.removeprefix(ptero_root)}")
-                        shutil.copy2(source_file, dest_file)
+            sync_push(args, cfg, source_server_root, dest_server_root)
 
 
 def clear_directory_pull(args, directory):
@@ -159,8 +168,6 @@ def clear_directory_pull(args, directory):
 def clear_directory_push(args, directory, push_paths, push_files):
     """Remove allowed files/dirs inside `directory` when pushing (selective delete)."""
     for root, dirs, files in os.walk(directory, topdown=True):
-        
-        # Directories
         for dir in dirs:
             dir_path = os.path.join(root, dir)
             if substring_in_path(push_paths, dir_path):
@@ -172,8 +179,6 @@ def clear_directory_push(args, directory, push_paths, push_files):
                         # shutil.rmtree(dir_path)
                     except OSError:
                         print(f"Could not remove non-empty or locked dir: {dir_path.removeprefix(ptero_root)}")
-        
-        # Files
         for file in files:
             path = os.path.join(root, file)
             is_plugins_folder = root.rstrip("/\\").endswith("/plugins")
@@ -297,6 +302,6 @@ def update_sync_timestamps(args, cfg):
     with open(config_path, "w") as f:
         yaml.dump(cfg, f, default_flow_style=False)
 
-def valid_push_extension(filename):
-        extensions = [".jar", ".yml"]
-        return filename.lower().endswith(tuple(ext.lower() for ext in extensions))
+def has_file_extension(filename, file_extensions):
+    """Return True if filename ends with one of the given extensions."""
+    return filename.lower().endswith(tuple(ext.lower() for ext in file_extensions))
