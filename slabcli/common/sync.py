@@ -143,19 +143,18 @@ def clear_directory_contents(args, directory, push_paths, push_files, exempt_pat
     if args.direction == PULL:
         for item in os.listdir(directory):
             path = os.path.join(directory, item)
-            if args.dry_run:
-                print(f"[DRY RUN] Would delete: {path.removeprefix(ptero_root)}")
-            else:
-                if not substring_in_path(exempt_paths, path): # potential to remove this, only reason to not copy worlds is time involved
-                    print(f"Deleting: {path.removeprefix(ptero_root)}")
-                    if os.path.isfile(path) or os.path.islink(path):
-                        print(f"Deleting file commented out for now")
-                        # os.remove(path)
-                    elif os.path.isdir(path):
-                        print(f"Deleting path commented out for now")
-                        # shutil.rmtree(path)
+            if os.path.isfile(path) or os.path.islink(path):
+                if args.dry_run:
+                    print(f"[DRY RUN] Would delete file: {path.removeprefix(ptero_root)}")
                 else:
-                    print(f"Cannot delete, exempt: {path.removeprefix(ptero_root)}")
+                    print(f"Deleting file commented out for now")
+                    # os.remove(path)
+            elif os.path.isdir(path): 
+                if args.dry_run:
+                    print(f"[DRY RUN] Would delete directory: {path.removeprefix(ptero_root)}/..")
+                else:
+                    print(f"Deleting path commented out for now")
+                    # shutil.rmtree(path)
         return
     
     if args.direction == PUSH:
