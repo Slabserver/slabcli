@@ -49,18 +49,18 @@ def run(args, cfg):
     push_files = list(cfg["replacements"].get("allowed_push_files", []))
     push_filetypes = list(cfg["replacements"].get("allowed_push_filetypes", []))
 
-    if args.debug:
+    # if args.debug:
     # Debug output to verify the setup before proceeding
-        print(clifmt.LIGHT_GRAY + "replacements dict =", replacements)
-        print(clifmt.LIGHT_GRAY + "args.direction =", args.direction)
-        print(clifmt.LIGHT_GRAY + "source_servers =", source_servers)
-        print(clifmt.LIGHT_GRAY + "dest_servers =", dest_servers)
-        print(clifmt.LIGHT_GRAY + "exempt paths =", exempt_paths)
-        print(clifmt.LIGHT_GRAY + "world names =", world_names)
-        print(clifmt.LIGHT_GRAY + "allowed push paths =", push_paths) 
-        print(clifmt.LIGHT_GRAY + "allowed push files =", push_files) 
-        print(clifmt.LIGHT_GRAY + "allowed push filetypes =", push_filetypes) 
-        return
+    print(clifmt.LIGHT_GRAY + "replacements dict =", replacements)
+    print(clifmt.LIGHT_GRAY + "args.direction =", args.direction)
+    print(clifmt.LIGHT_GRAY + "source_servers =", source_servers)
+    print(clifmt.LIGHT_GRAY + "dest_servers =", dest_servers)
+    print(clifmt.LIGHT_GRAY + "exempt paths =", exempt_paths)
+    print(clifmt.LIGHT_GRAY + "world names =", world_names)
+    print(clifmt.LIGHT_GRAY + "allowed push paths =", push_paths) 
+    print(clifmt.LIGHT_GRAY + "allowed push files =", push_files) 
+    print(clifmt.LIGHT_GRAY + "allowed push filetypes =", push_filetypes) 
+        # return
 
     # Step 1: Sync files from source to destination unless we're in update-only mode
     if not args.update_only:
