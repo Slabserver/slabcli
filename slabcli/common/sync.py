@@ -71,9 +71,9 @@ def run(args, cfg):
     # Step 2: Update server config files with replacements
     if args.dry_run:
         # In dry run mode, no files are actually copied, so update the source instead
-        update_config_files(args, source_servers, replacements, push_filetypes, push_paths, exempt_paths)
+        update_config_files(args, source_servers, replacements, exempt_paths)
     else:
-        update_config_files(args, dest_servers, replacements, push_filetypes, push_paths, exempt_paths)
+        update_config_files(args, dest_servers, replacements, exempt_paths)
 
     # Step 3: Log or persist the timestamp of this sync operation
     if not args.dry_run:
