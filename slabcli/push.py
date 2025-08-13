@@ -10,7 +10,7 @@ def add_arguments(parser):
     parser.add_argument('--debug', action='store_true', help='print internal config mappings for Staging and Production')
     parser.add_argument('--dry-run', action='store_true', help='show which files and config changes would be pushed to Production')
     parser.add_argument('--update-only', action='store_true', help='push the config changes only, with no copying of files at all')
-    parser.add_argument('--skip-prompts', action='store_true', help='skips input prompt for SlabCLI. Useful for logging, but forces --dry-run to true')
+    parser.add_argument('--skip-prompts', '-y', action='store_true', help='skips input prompt for SlabCLI. Useful for logging, but forces --dry-run to true')
 
 def run(args):
     cfg = config.load_config()
