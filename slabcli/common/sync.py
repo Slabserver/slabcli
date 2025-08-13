@@ -44,7 +44,7 @@ def run(args, cfg):
     if missing_keys:
         raise ValueError("Cannot update servers: missing replacement keys in config.yml")
 
-    world_names += list(cfg["replacements"].get("world_names", {}).values())
+    world_names = list(cfg["replacements"].get("world_names", {}).values())
 
     # Build list of paths and filetypes to include for push processing (e.g. plugins and datapacks)
     push_paths = list(cfg["replacements"].get("allowed_push_paths", []))
