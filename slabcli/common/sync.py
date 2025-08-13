@@ -75,16 +75,16 @@ def run(args, cfg):
 
 def sync_pull(args, cfg, name, source_server_root, dest_server_root):
     """Sync an entire server directory from source to destination for PULL direction."""
-    clear_directory_pull(args, dest_server_root)
+    clear_directory_pull(args, dest_server_root, name)
 
     src_rel = source_server_root.removeprefix(ptero_root)
     dst_rel = dest_server_root.removeprefix(ptero_root)
 
     if args.dry_run:
-        print(f"[DRY RUN] Would copy entire {server_type[args.direction]}{name} directory {src_rel} -> {dst_rel}")
+        print(f"[DRY RUN] Would copy entire {server_type[args.direction]}{name} directory: {src_rel} -> {dst_rel}")
         print_directory_listing(source_server_root)
     else:
-        print(f"Copying entire directory {src_rel} -> {dst_rel} (commented out)")
+        print(f"Copying entire {server_type[args.direction]}{name} directory: {src_rel} -> {dst_rel} (commented out)")
         # shutil.copytree(source_server_root, dest_server_root, dirs_exist_ok=True)
 
 
@@ -144,12 +144,12 @@ def print_directory_listing(base_dir):
         suffix = "/..." if os.path.isdir(full_path) else ""
         print(f"  {full_path.removeprefix(ptero_root)}{suffix}")
     
-def clear_directory_pull(args, directory):
+def clear_directory_pull(args, directory, name):
     """Remove all files/dirs inside `directory` when pulling (full wipe)."""
     rel_base = directory.removeprefix(ptero_root)
 
     if args.dry_run:
-        print(f"[DRY RUN] Would delete entire contents of {rel_base}")
+        print(f"[DRY RUN] Would delete entire contents of {server_type[args.direction]}{name}: {rel_base}")
     else:
         print(f"Deleting entire contents of {rel_base} (commented out)")
 
