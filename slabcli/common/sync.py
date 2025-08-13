@@ -19,25 +19,24 @@ def run(args, cfg):
 
     # Determine source and destination servers and their replacement mappings,
     # based on sync direction (PUSH = staging → production, PULL = production → staging).
-    if args.direction == PUSH:
-        source = "staging"
-        dest = "prod"
-        # Build list of paths to exclude from processing (e.g. world files or user-specified paths)
-        exempt_paths = list(cfg["replacements"].get("exempt_push_paths", []))
-    elif args.direction == PULL:
-        source = "prod"
-        dest = "staging"
-        # Build list of paths to exclude from processing (e.g. world files or user-specified paths)
-        exempt_paths = list(cfg["replacements"].get("exempt_pull_paths", []))
-    else:
+    directions = {
+        PUSH: ("staging", "prod"),
+        PULL: ("prod", "staging")
+    }
+    try:
+        source, dest = directions[args.direction]
+    except KeyError:
         raise ValueError(f"Unknown direction: {args.direction}")
     
-    source_servers = cfg["servers"].get(source, {})
-    dest_servers = cfg["servers"].get(dest, {})
+    # Build list of paths to exclude from processing (e.g. world files or user-specified paths)
+    exempt_paths = list(cfg["replacements"].get("exempt_" + args.direction + "_paths", []))
+
     replacements, missing_keys = config.compute_config_replacements(
         cfg["replacements"].get(source, {}),
         cfg["replacements"].get(dest, {})
     )
+    source_servers = cfg["servers"].get(source, {})
+    dest_servers = cfg["servers"].get(dest, {})
 
     # Validate that all necessary replacement keys are present
     if missing_keys:
@@ -67,12 +66,8 @@ def run(args, cfg):
     if not args.update_only:
         sync_server_files(args, cfg, source_servers, dest_servers)
 
-    # Step 2: Update server config files with replacements
-    if args.dry_run:
-        # In dry run mode, no files are actually copied, so update the source instead
-        update_config_files(args, source_servers, replacements, exempt_paths)
-    else:
-        update_config_files(args, dest_servers, replacements, exempt_paths)
+    # Step 2: Update server config files with any replacements
+        update_config_files(args, source_servers, dest_servers, replacements, exempt_paths)
 
     # Step 3: Log or persist the timestamp of this sync operation
     if not args.dry_run:
@@ -196,17 +191,22 @@ def clear_directory_push(args, directory, push_paths, push_files):
                     # os.remove(path)
 
 
-def update_config_files(args, dest_servers, replacements, exempt_paths):
+def update_config_files(args, source_servers, dest_servers, replacements, exempt_paths):
     """Apply replacements to config files in destination folders."""
 
     print(clifmt.WHITE + "Updating config files...")
     count = 0  # Track how many files were (or would be) updated
 
+    target_servers = dest_servers
+    # if we're dry running and doing a full pull, the files aren't actually copied yet, so we need to 'target' the source server
+    if args.dry_run and not args.update_only:
+        target_servers = source_servers
+
     # Loop over each server name in the destination server map
-    for name in dest_servers:
-        # Construct the full path to the server's config files
-        server_path = ptero_root + dest_servers[name]
-        print(clifmt.WHITE + "checking server: " + dest_servers[name])
+    for name in target_servers:
+        # Construct full path to the server's config files
+        server_path = ptero_root + target_servers[name]
+        print(clifmt.WHITE + "Checking server: " + server_path)
 
         # Walk through all directories and files within the server path
         for root, dirs, files in os.walk(server_path):
@@ -214,12 +214,11 @@ def update_config_files(args, dest_servers, replacements, exempt_paths):
                 if filename.endswith((".conf", ".txt, .properties", ".yml", "yaml")):
                     path = os.path.join(root, filename)
                     # Attempt to process the file; increment count if it changed
-                    if process_config_file(path, replacements, exempt_paths, args.dry_run):
+                    if process_config_file(args, path, replacements, exempt_paths):
                         count += 1
 
 
-    # Setup ternary vars for print
-    f = "files" if count != 1 else "file"
+    f = "files" if count != 1 else "file" # Setup ternary vars for print
 
     # Summarize how many files were updated or would be updated
     if args.dry_run:
@@ -228,7 +227,7 @@ def update_config_files(args, dest_servers, replacements, exempt_paths):
         print(clifmt.GREEN + "Updated " + f"{count} " + f)
 
 
-def process_config_file(path, replacements, exempt_paths, dry_run):
+def process_config_file(args, path, replacements, exempt_paths):
     """Apply replacements to a config file if changes are needed."""
 
     # Open the file at 'path' and read its entire content.
@@ -250,29 +249,29 @@ def process_config_file(path, replacements, exempt_paths, dry_run):
     if new_content != content:
 
         # Resolve short path for concise console logging
-        short_path = path.removeprefix(ptero_root)
+        print_path = path.removeprefix(ptero_root)
 
         # Check if the file's path should be exempted from processing.
         if substring_in_path(exempt_paths, path):
             # If running in dry-run mode, print a message indicating that the file would be skipped.
-            if dry_run:
+            if args.dry_run:
                 print(clifmt.LIGHT_GRAY +
-                    f"[DRY RUN] Would skip updating {short_path} as it contains an excluded directory or filetype"
+                    f"[DRY RUN] Would skip updating {print_path} as it contains an excluded directory or filetype"
                 )
             else:
                 # In non-dry-run mode, print a message that the file is being skipped.
                 print(clifmt.LIGHT_GRAY +
-                    f"Skipping {short_path} as it contains an excluded directory or filetype"
+                    f"Skipping {print_path} as it contains an excluded directory or filetype"
                 )
         else:
             # If the file is not exempted and it's a dry-run, indicate that changes would be written.
-            if dry_run:
+            if args.dry_run:
                 print(clifmt.YELLOW +
-                    f"[DRY RUN] Would write new content to {short_path} (but prod) (changes: {', '.join(changes)})"
+                    f"[DRY RUN] Would write new content to {print_path} (but prod) (changes: {', '.join(changes)})"
                 )
             else:
                 # Otherwise, write the new content back to the file and print an update message.
-                print(clifmt.GREEN +f"Writing new content to {short_path} (changes: {', '.join(changes)})")
+                print(clifmt.GREEN +f"Writing new content to {print_path} (changes: {', '.join(changes)})")
                 with open(path, "w") as f:
                     f.write(new_content)
             # Return True to indicate that changes were made.
