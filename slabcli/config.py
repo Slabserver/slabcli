@@ -30,7 +30,7 @@ def compute_config_replacements(source_cfg, target_cfg):
             if isinstance(source_val, dict) and isinstance(target_val, dict):
                 recurse(source_val, target_val, full_path)
             elif source_val != target_val:
-                replacements[target_val] = source_val
+                replacements[source_val] = target_val
 
         # Log keys missing in source
         missing_in_source = target.keys() - source.keys()
