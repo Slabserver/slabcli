@@ -205,16 +205,15 @@ def update_config_files(args, source_servers, dest_servers, replacements, exempt
     # Loop over each server name in the destination server map
     for name in target_servers:
         # Construct full path to the server's config files
-        server_path = ptero_root + target_servers[name]
-        print(clifmt.WHITE + "Checking server: " + server_path)
+        print(clifmt.WHITE + "Checking server: " + ptero_root + dest_servers[name])
 
         # Walk through all directories and files within the server path
-        for root, dirs, files in os.walk(server_path):
+        for root, dirs, files in os.walk(ptero_root + target_servers[name]):
             for filename in files:
                 if filename.endswith((".conf", ".txt, .properties", ".yml", "yaml")):
                     path = os.path.join(root, filename)
                     # Attempt to process the file; increment count if it changed
-                    if process_config_file(args, path, replacements, exempt_paths):
+                    if process_config_file(args, path, replacements, exempt_paths, source_servers[name], dest_servers[name]):
                         count += 1
 
 
@@ -227,7 +226,7 @@ def update_config_files(args, source_servers, dest_servers, replacements, exempt
         print(clifmt.GREEN + "Updated " + f"{count} " + f)
 
 
-def process_config_file(args, path, replacements, exempt_paths):
+def process_config_file(args, path, replacements, exempt_paths, source_server, dest_server):
     """Apply replacements to a config file if changes are needed."""
 
     # Open the file at 'path' and read its entire content.
@@ -250,6 +249,8 @@ def process_config_file(args, path, replacements, exempt_paths):
 
         # Resolve short path for concise console logging
         print_path = path.removeprefix(ptero_root)
+        if args.dry_run and not args.update_only:
+            print_path.replace(source_server, dest_server)
 
         # Check if the file's path should be exempted from processing.
         if substring_in_path(exempt_paths, path):
