@@ -111,15 +111,15 @@ def sync_server_files(args, cfg, source_servers, dest_servers, push_filetypes, p
                 dest_file = os.path.join(dest_path, file)
                 source_file = os.path.join(root, file)
                 
-                sync = False
+                sync = True if args.direction == PULL else False
                 
                 # Skip copying if this path should be excluded
-                if args.direction == PULL:
-                    if args.sync_worlds:
-                        sync = True
-                    else:
-                        world_names += list(cfg["replacements"].get("world_names", {}).values())
-                        sync = substring_in_path(world_names, dest_path)
+                # if args.direction == PULL:
+                #     if args.sync_worlds:
+                #         sync = True
+                #     else:
+                #         world_names += list(cfg["replacements"].get("world_names", {}).values())
+                #         sync = substring_in_path(world_names, dest_path)
                 if args.direction == PUSH:
                     if substring_in_path(push_paths, dest_path) or valid_push_extension(file, push_filetypes) or substring_in_path(push_files, file):
                         if not substring_in_path(exempt_paths, dest_path):
