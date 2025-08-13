@@ -101,7 +101,7 @@ def sync_server_files(args, source_servers, dest_servers, push_filetypes, push_p
             raise FileNotFoundError(f"Destination path does not exist: {dest_server_root}")
 
         # Clear the contents of the destination directory before syncing
-        clear_directory_contents(args, dest_server_root, push_paths, exempt_paths, dry_run)
+        clear_directory_contents(args, dest_server_root, push_paths, push_files, exempt_paths, dry_run)
 
         # If dry run, just print what would happen
         print(f"Copying files from {source_server_root} to {dest_server_root}...")
@@ -122,7 +122,7 @@ def sync_server_files(args, source_servers, dest_servers, push_filetypes, push_p
                 if args.direction == PUSH:
                     if substring_in_path(push_paths, dest_path) or valid_push_extension(file, push_filetypes) or substring_in_path(push_files, file):
                         is_exempt_path = substring_in_path(exempt_paths, dest_path)
-                        if not invalid_file_extension(file) and not is_exempt_path:
+                        if not is_exempt_path:
                             sync = True
 
                 if sync:
@@ -136,7 +136,7 @@ def sync_server_files(args, source_servers, dest_servers, push_filetypes, push_p
                         shutil.copy2(source_file, dest_file)
 
 
-def clear_directory_contents(args, directory, push_paths, push_files, dry_run):
+def clear_directory_contents(args, directory, push_paths, push_files, exempt_paths, dry_run):
     """Remove all files/dirs inside `directory`, skipping any path that contains an excluded substring."""
 
     # If direction is PULL, just nuke everything inside
@@ -146,13 +146,16 @@ def clear_directory_contents(args, directory, push_paths, push_files, dry_run):
             if dry_run:
                 print(f"[DRY RUN] Would delete: {path.removeprefix(ptero_root)}")
             else:
-                print(f"Deleting: {path.removeprefix(ptero_root)}")
-                if os.path.isfile(path) or os.path.islink(path):
-                    print(f"Deleting file commented out for now")
-                    # os.remove(path)
-                elif os.path.isdir(path):
-                    print(f"Deleting path commented out for now")
-                    # shutil.rmtree(path)
+                if not substring_in_path(exempt_paths, path): # potential to remove this, only reason to not copy worlds is time involved
+                    print(f"Deleting: {path.removeprefix(ptero_root)}")
+                    if os.path.isfile(path) or os.path.islink(path):
+                        print(f"Deleting file commented out for now")
+                        # os.remove(path)
+                    elif os.path.isdir(path):
+                        print(f"Deleting path commented out for now")
+                        # shutil.rmtree(path)
+                else:
+                    print(f"Cannot delete, exempt: {path.removeprefix(ptero_root)}")
         return
     
     if args.direction == PUSH:
