@@ -5,9 +5,12 @@ import yaml
 from slabcli import config
 from slabcli.common.fmt import clifmt
 
-ptero_root = "/srv/daemon-data/"
 PUSH = "push"
 PULL = "pull"
+
+ptero_root = "/srv/daemon-data/"
+server_type = {PUSH: "SMP ", PULL: "test-"}
+server_directions = {PUSH: ("staging", "prod"), PULL: ("prod", "staging")}
 
 def run(args, cfg):
     """Syncs Staging <-> Production servers depending on direction.
@@ -19,12 +22,8 @@ def run(args, cfg):
 
     # Determine source and destination servers and their replacement mappings,
     # based on sync direction (PUSH = staging → production, PULL = production → staging).
-    directions = {
-        PUSH: ("staging", "prod"),
-        PULL: ("prod", "staging")
-    }
     try:
-        source, dest = directions[args.direction]
+        source, dest = server_directions[args.direction]
     except KeyError:
         raise ValueError(f"Unknown direction: {args.direction}")
     
@@ -74,7 +73,7 @@ def run(args, cfg):
         update_sync_timestamps(args, cfg)
 
 
-def sync_pull(args, cfg, source_server_root, dest_server_root):
+def sync_pull(args, cfg, name, source_server_root, dest_server_root):
     """Sync an entire server directory from source to destination for PULL direction."""
     clear_directory_pull(args, dest_server_root)
 
@@ -82,14 +81,14 @@ def sync_pull(args, cfg, source_server_root, dest_server_root):
     dst_rel = dest_server_root.removeprefix(ptero_root)
 
     if args.dry_run:
-        print(f"[DRY RUN] Would copy entire directory {src_rel} -> {dst_rel}")
+        print(f"[DRY RUN] Would copy entire {server_type[args.direction]}{name} directory {src_rel} -> {dst_rel}")
         print_directory_listing(source_server_root)
     else:
         print(f"Copying entire directory {src_rel} -> {dst_rel} (commented out)")
         # shutil.copytree(source_server_root, dest_server_root, dirs_exist_ok=True)
 
 
-def sync_push(args, cfg, source_server_root, dest_server_root):
+def sync_push(args, cfg, name, source_server_root, dest_server_root):
     """Sync selected files from source to destination for PUSH direction."""
     push_paths = list(cfg["replacements"].get("allowed_push_paths", []))
     push_files = list(cfg["replacements"].get("allowed_push_files", []))
@@ -107,9 +106,9 @@ def sync_push(args, cfg, source_server_root, dest_server_root):
 
             if should_push_file(dest_path, file, push_paths, push_filetypes, push_files):
                 if args.dry_run:
-                    print(f"[DRY RUN] Would copy {source_file.removeprefix(ptero_root)} -> {dest_file.removeprefix(ptero_root)}")
+                    print(f"[DRY RUN] Would copy {server_type[args.direction]}{name} {source_file.removeprefix(ptero_root)} -> {dest_file.removeprefix(ptero_root)}")
                 else:
-                    print(f"Copying {source_file.removeprefix(ptero_root)} -> {dest_file.removeprefix(ptero_root)} (commented out)")
+                    print(f"Copying {server_type[args.direction]}{name} {source_file.removeprefix(ptero_root)} -> {dest_file.removeprefix(ptero_root)} (commented out)")
                     # os.makedirs(dest_path, exist_ok=True)
                     # shutil.copy2(source_file, dest_file)
 
@@ -134,9 +133,9 @@ def sync_server_files(args, cfg, source_servers, dest_servers):
             raise FileNotFoundError(f"Destination path does not exist: {dest_server_root}")
 
         if args.direction == PULL:
-            sync_pull(args, cfg, source_server_root, dest_server_root)
+            sync_pull(args, cfg, name, source_server_root, dest_server_root)
         elif args.direction == PUSH:
-            sync_push(args, cfg, source_server_root, dest_server_root)
+            sync_push(args, cfg, name, source_server_root, dest_server_root)
 
 
 def print_directory_listing(base_dir):
@@ -205,7 +204,7 @@ def update_config_files(args, source_servers, dest_servers, replacements, exempt
     # Loop over each server name in the destination server map
     for name in target_servers:
         # Construct full path to the server's config files
-        print(clifmt.WHITE + "Checking server: " + ptero_root + dest_servers[name])
+        print(clifmt.WHITE + f"Checking {server_type[args.direction]}{name} server: " + ptero_root + dest_servers[name])
 
         # Walk through all directories and files within the server path
         for root, dirs, files in os.walk(ptero_root + target_servers[name]):
