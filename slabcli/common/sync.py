@@ -79,7 +79,7 @@ def run(args, cfg):
         update_sync_timestamps(args, cfg)
 
 
-def sync_pull(args, source_server_root, dest_server_root):
+def sync_pull(args, cfg, source_server_root, dest_server_root):
     """Sync an entire server directory from source to destination for PULL direction."""
     clear_directory_pull(args, dest_server_root)
 
