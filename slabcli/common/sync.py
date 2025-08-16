@@ -204,7 +204,7 @@ def update_config_files(args, source_servers, dest_servers, replacements, exempt
     # Loop over each server name in the destination server map
     for name in servers_to_check:
         # Construct full path to the server's config files
-        print(clifmt.WHITE + f"Checking {server_type[args.direction]}{name} server: " + ptero_root + dest_servers[name])
+        print(clifmt.WHITE + f"Checking {server_type[args.direction]}{name} server: " + ptero_root + servers_to_log[name])
 
         # Walk through all directories and files within the server path
         for root, dirs, files in os.walk(ptero_root + servers_to_check[name]):
