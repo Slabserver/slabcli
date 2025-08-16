@@ -196,8 +196,8 @@ def update_config_files(args, source_servers, dest_servers, replacements, exempt
     print(clifmt.WHITE + "Updating config files...")
     count = 0  # Track how many files were (or would be) updated
 
-    servers_to_check, servers_to_log = dest_servers
-    # if we're dry running and doing a full pull, the files aren't actually copied yet, so we need to 'target' the source server
+    servers_to_check = servers_to_log = dest_servers
+    # if we're dry running a full pull, the files aren't actually copied yet, so we need to check the source server
     if args.dry_run and not args.update_only:
         servers_to_check = source_servers
 
