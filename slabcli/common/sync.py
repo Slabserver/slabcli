@@ -248,9 +248,7 @@ def process_config_file(args, path, replacements, exempt_paths, check_server, lo
 
         # Resolve short path for concise console logging
         print_path = path.removeprefix(ptero_root)
-        print("check server " + check_server)
-        print("log server " + log_server)
-        print_path.replace(check_server, log_server)
+        print_path = print_path.replace(check_server, log_server)
 
         # Check if the file's path should be exempted from processing.
         if substring_in_path(exempt_paths, path):
