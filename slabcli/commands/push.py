@@ -1,6 +1,6 @@
 import time as t
 from slabcli import config
-from slabcli.common import sync
+from slabcli.core import sync
 from slabcli.common.fmt import clifmt
 from datetime import datetime, timezone
 

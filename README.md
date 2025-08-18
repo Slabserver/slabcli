@@ -30,9 +30,6 @@ This should exist on the dedi server at all times, and if you don't have one, th
 - You never had one, and you're not staff - oops, go away.
 - All the staff have lost it, and we're a bit screwed.
 
-Until such a time that Slabserver is running on Minecraft version 1.21.8 or above, assume that the `config.yml` file
-is total bullshit, completely wrong, untested hacky schlock, and will be subject to change at any point.
-
 ### Example Config
 
 <details>

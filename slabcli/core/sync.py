@@ -4,13 +4,14 @@ import shutil
 import yaml
 from slabcli import config
 from slabcli.common.fmt import clifmt
+from slabcli.common.utils import has_file_extension, is_substring_in_string
 
 PUSH = "push"
 PULL = "pull"
 
-ptero_root = "/srv/daemon-data/"
-server_type = {PUSH: "SMP ", PULL: "test-"}
-server_directions = {PUSH: ("staging", "prod"), PULL: ("prod", "staging")}
+PTERO_ROOT = "/srv/daemon-data/"
+SERVER_TYPE = {PUSH: "SMP ", PULL: "test-"}
+SERVER_DIRECTIONS = {PUSH: ("staging", "prod"), PULL: ("prod", "staging")}
 
 def run(args, cfg):
     """Syncs Staging <-> Production servers depending on direction.
@@ -23,7 +24,7 @@ def run(args, cfg):
     # Determine source and destination servers and their replacement mappings,
     # based on sync direction (PUSH = staging → production, PULL = production → staging).
     try:
-        source, dest = server_directions[args.direction]
+        source, dest = SERVER_DIRECTIONS[args.direction]
     except KeyError:
         raise ValueError(f"Unknown direction: {args.direction}")
     
@@ -77,15 +78,27 @@ def sync_pull(args, cfg, name, source_server_root, dest_server_root):
     """Sync an entire server directory from source to destination for PULL direction."""
     clear_directory_pull(args, dest_server_root, name)
 
-    src_rel = source_server_root.removeprefix(ptero_root)
-    dst_rel = dest_server_root.removeprefix(ptero_root)
+    src_rel = source_server_root.removeprefix(PTERO_ROOT)
+    dst_rel = dest_server_root.removeprefix(PTERO_ROOT)
 
     if args.dry_run:
-        print(f"[DRY RUN] Would copy entire {server_type[args.direction]}{name} directory: {src_rel} -> {dst_rel}")
+        print(f"[DRY RUN] Would copy entire {SERVER_TYPE[args.direction]}{name} directory: {src_rel} -> {dst_rel}")
         print_directory_listing(source_server_root)
     else:
-        print(f"Copying entire {server_type[args.direction]}{name} directory: {src_rel} -> {dst_rel} (commented out)")
+        print(f"Copying entire {SERVER_TYPE[args.direction]}{name} directory: {src_rel} -> {dst_rel} (commented out)")
         # shutil.copytree(source_server_root, dest_server_root, dirs_exist_ok=True)
+
+    stage_icon = os.path.join(dest_server_root, "server-icon-staging.png")
+    final_icon = os.path.join(dest_server_root, "server-icon.png")
+
+    if args.dry_run:
+        print(f"[DRY RUN] Would overwrite {final_icon.removeprefix(PTERO_ROOT)} "
+            f"with {stage_icon.removeprefix(PTERO_ROOT)}")
+    else:
+        if os.path.exists(stage_icon):
+            shutil.copy2(stage_icon, final_icon)  # overwrite always
+            print(f"Overwrote {final_icon.removeprefix(PTERO_ROOT)} "
+                f"with {stage_icon.removeprefix(PTERO_ROOT)}")
 
 
 def sync_push(args, cfg, name, source_server_root, dest_server_root):
@@ -103,28 +116,39 @@ def sync_push(args, cfg, name, source_server_root, dest_server_root):
         for file in files:
             source_file = os.path.join(root, file)
             dest_file = os.path.join(dest_path, file)
+            last_push_time = cfg["meta"].get("last_push_files", 0)
 
-            if should_push_file(dest_path, file, push_paths, push_filetypes, push_files):
-                if args.dry_run:
-                    print(f"[DRY RUN] Would copy {server_type[args.direction]}{name} {source_file.removeprefix(ptero_root)} -> {dest_file.removeprefix(ptero_root)}")
+            if should_push_file(dest_file, push_paths, push_filetypes, push_files, last_push_time):
+                try:
+                    mtime = os.path.getmtime(file)
+                except OSError:
+                    return False
+                if mtime > last_push_time:
+                    if args.dry_run:
+                        print(f"[DRY RUN] Warning! {dest_file.removeprefix(PTERO_ROOT)} is newer than {source_file.removeprefix(PTERO_ROOT)} that is being pushed. Would not push.")
+                    else:
+                        print(f"Warning! {dest_file.removeprefix(PTERO_ROOT)} is newer than {source_file.removeprefix(PTERO_ROOT)} that is being pushed. Will not push.")
                 else:
-                    print(f"Copying {server_type[args.direction]}{name} {source_file.removeprefix(ptero_root)} -> {dest_file.removeprefix(ptero_root)} (commented out)")
-                    # os.makedirs(dest_path, exist_ok=True)
-                    # shutil.copy2(source_file, dest_file)
+                    if args.dry_run:
+                        print(f"[DRY RUN] Would copy {SERVER_TYPE[args.direction]}{name} {source_file.removeprefix(PTERO_ROOT)} -> {dest_file.removeprefix(PTERO_ROOT)}")
+                    else:
+                        print(f"Copying {SERVER_TYPE[args.direction]}{name} {source_file.removeprefix(PTERO_ROOT)} -> {dest_file.removeprefix(PTERO_ROOT)} (commented out)")
+                        # os.makedirs(dest_path, exist_ok=True)
+                        # shutil.copy2(source_file, dest_file)
 
 
-def should_push_file(path, file, push_paths, push_filetypes, push_files):
+def should_push_file(file, push_paths, push_filetypes, push_files, last_push_time):
     """Return True if a file should be pushed based on path, extension, and exemption rules."""
-    if substring_in_path(push_paths, path) or substring_in_path(push_files, file) or has_file_extension(file, push_filetypes):
-        return True
+    if is_substring_in_string(push_paths, file) or is_substring_in_string(push_files, file) or has_file_extension(file, push_filetypes):
+            return True
     return False
 
 
 def sync_server_files(args, cfg, source_servers, dest_servers):
     """Dispatch sync by direction (PULL or PUSH)."""
     for name in source_servers:
-        source_server_root = ptero_root + source_servers[name]
-        dest_server_root = ptero_root + dest_servers.get(name, "")
+        source_server_root = PTERO_ROOT + source_servers[name]
+        dest_server_root = PTERO_ROOT + dest_servers.get(name, "")
 
         if not dest_server_root:
             print(f"Skipping {name}, no matching destination.")
@@ -142,14 +166,14 @@ def print_directory_listing(base_dir):
     for item in os.listdir(base_dir):
         full_path = os.path.join(base_dir, item)
         suffix = "/..." if os.path.isdir(full_path) else ""
-        print(f"  {full_path.removeprefix(ptero_root)}{suffix}")
+        print(f"  {full_path.removeprefix(PTERO_ROOT)}{suffix}")
     
 def clear_directory_pull(args, directory, name):
     """Remove all files/dirs inside `directory` when pulling (full wipe)."""
-    rel_base = directory.removeprefix(ptero_root)
+    rel_base = directory.removeprefix(PTERO_ROOT)
 
     if args.dry_run:
-        print(f"[DRY RUN] Would delete entire contents of {server_type[args.direction]}{name}: {rel_base}")
+        print(f"[DRY RUN] Would delete entire contents of {SERVER_TYPE[args.direction]}{name}: {rel_base}")
     else:
         print(f"Deleting entire contents of {rel_base} (commented out)")
 
@@ -170,23 +194,23 @@ def clear_directory_push(args, directory, push_paths, push_files):
     for root, dirs, files in os.walk(directory, topdown=True):
         for dir in dirs:
             dir_path = os.path.join(root, dir)
-            if substring_in_path(push_paths, dir_path):
+            if is_substring_in_string(push_paths, dir_path):
                 if args.dry_run:
-                    print(f"[DRY RUN] Would delete dir: {dir_path.removeprefix(ptero_root)}")
+                    print(f"[DRY RUN] Would delete dir: {dir_path.removeprefix(PTERO_ROOT)}")
                 else:
                     try:
                         print(f"Deleted directory: {dir_path} (commented out)")
                         # shutil.rmtree(dir_path)
                     except OSError:
-                        print(f"Could not remove non-empty or locked dir: {dir_path.removeprefix(ptero_root)}")
+                        print(f"Could not remove non-empty or locked dir: {dir_path.removeprefix(PTERO_ROOT)}")
         for file in files:
             path = os.path.join(root, file)
             is_plugins_folder = root.rstrip("/\\").endswith("/plugins")
-            if substring_in_path(push_files, path) or (is_plugins_folder and file.lower().endswith(".jar")):
+            if is_substring_in_string(push_files, path) or (is_plugins_folder and file.lower().endswith(".jar")):
                 if args.dry_run:
-                    print(f"[DRY RUN] Would delete file: {path.removeprefix(ptero_root)}")
+                    print(f"[DRY RUN] Would delete file: {path.removeprefix(PTERO_ROOT)}")
                 else:
-                    print(f"Deleted file: {path.removeprefix(ptero_root)} (commented out)")
+                    print(f"Deleted file: {path.removeprefix(PTERO_ROOT)} (commented out)")
                     # os.remove(path)
 
 
@@ -204,10 +228,10 @@ def update_config_files(args, source_servers, dest_servers, replacements, exempt
     # Loop over each server name in the destination server map
     for name in servers_to_check:
         # Construct full path to the server's config files
-        print(clifmt.WHITE + f"Checking {server_type[args.direction]}{name} server: " + ptero_root + servers_to_log[name])
+        print(clifmt.WHITE + f"Checking {SERVER_TYPE[args.direction]}{name} server: " + PTERO_ROOT + servers_to_log[name])
 
         # Walk through all directories and files within the server path
-        for root, dirs, files in os.walk(ptero_root + servers_to_check[name]):
+        for root, dirs, files in os.walk(PTERO_ROOT + servers_to_check[name]):
             for filename in files:
                 if filename.endswith((".conf", ".txt, .properties", ".yml", "yaml")):
                     path = os.path.join(root, filename)
@@ -247,11 +271,11 @@ def process_config_file(args, path, replacements, exempt_paths, check_server, lo
     if new_content != content:
 
         # Resolve short path for concise console logging
-        print_path = path.removeprefix(ptero_root)
+        print_path = path.removeprefix(PTERO_ROOT)
         print_path = print_path.replace(check_server, log_server)
 
         # Check if the file's path should be exempted from processing.
-        if substring_in_path(exempt_paths, path):
+        if is_substring_in_string(exempt_paths, path):
             # If running in dry-run mode, print a message indicating that the file would be skipped.
             if args.dry_run:
                 print(clifmt.LIGHT_GRAY +
@@ -279,16 +303,6 @@ def process_config_file(args, path, replacements, exempt_paths, check_server, lo
     return False
 
 
-def substring_in_path(substrings, path):
-    """Loop through a list of substrings to determine if any substring is found within a directory path"""
-
-    substrings_to_check = substrings or []  # empty list to avoid errors
-    for substring in substrings_to_check:
-        if substring in path:
-            return True
-    return False
-
-
 def update_sync_timestamps(args, cfg):
     """Save timestamp info to our config file after a successful operation"""
 
@@ -306,6 +320,3 @@ def update_sync_timestamps(args, cfg):
     with open(config_path, "w") as f:
         yaml.dump(cfg, f, default_flow_style=False)
 
-def has_file_extension(filename, file_extensions):
-    """Return True if filename ends with one of the given extensions."""
-    return filename.lower().endswith(tuple(ext.lower() for ext in file_extensions))

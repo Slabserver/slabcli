@@ -1,6 +1,6 @@
 import sys
 import argparse
-from slabcli import push, pull
+from slabcli.commands import push, pull
 
 def main():
     # Create the parser
