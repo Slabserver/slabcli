@@ -15,6 +15,10 @@ def load_config():
         config = yaml.safe_load(f)
         return config
     
+def set_config(cfg):
+    with get_config_path().open("w") as f:
+        yaml.dump(cfg, f, default_flow_style=False)
+    
 def compute_config_replacements(source_cfg, target_cfg):
     replacements = {}
     missing_keys = False

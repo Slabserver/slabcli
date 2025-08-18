@@ -16,9 +16,7 @@ def run(args):
     cfg = config.load_config()
     args.direction = sync.PUSH
     args.sync_worlds = False
-
-    if args.skip_prompts:
-        args.dry_run = True
+    args.dry_run = True if args.skip_prompts else False
 
     print('')
     print(clifmt.HEADER + 'SlabCLI | push')
@@ -62,7 +60,7 @@ def print_cmd_info(args, cfg):
         print(clifmt.OKCYAN + f"Last update of Production config files from SlabCLI's config.yml occurred at: {ts_readable}")
     print('')
 
-    print(clifmt.WARNING + 'This will push the current files and folders of Staging to Production, updating files with values defined in SlabCLI\'s config.yml')
+    print(clifmt.WARNING + 'This will push files and folders defined in config.yml from Staging to Production, and update files with values defined in SlabCLI\'s config.yml')
     print(clifmt.BOLD + 'Please ensure Staging has been tested, Production has very recent backups, & lockdown is set in the Bouncer/persistent.yml if required.')
 
     if not args.dry_run:
