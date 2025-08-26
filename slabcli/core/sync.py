@@ -53,7 +53,6 @@ def run(args, cfg):
 
     # Debug output to verify the setup before proceeding
     print(clifmt.LIGHT_GRAY + "replacements dict =", replacements)
-    print(clifmt.LIGHT_GRAY + "args.direction =", args.direction)
     print(clifmt.LIGHT_GRAY + "source_servers =", source_servers)
     print(clifmt.LIGHT_GRAY + "dest_servers =", dest_servers)
     print(clifmt.LIGHT_GRAY + "exempt paths =", exempt_paths)
