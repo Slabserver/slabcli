@@ -4,7 +4,7 @@ import shutil
 import yaml
 from slabcli import config
 from slabcli.common.fmt import clifmt
-from slabcli.common.utils import file_has_extension, file_newer_than, substring_in_string
+from slabcli.common.utils import file_has_extension, file_newer_than, print_directory_contents, substring_in_string
 
 clicolor = clifmt.GREEN
 print_prefix = ""
@@ -102,7 +102,7 @@ def sync_pull(args, cfg, name, source_server_root, dest_server_root):
         print("(copy commented out)")
         # shutil.copytree(source_server_root, dest_server_root, dirs_exist_ok=True)
     else:
-        print_directory_listing(source_server_root)
+        print_directory_contents(source_server_root)
 
     stage_icon = os.path.join(dest_server_root, "server-icon-staging.png")
     final_icon = os.path.join(dest_server_root, "server-icon.png")
@@ -151,13 +151,6 @@ def should_push_file(file, push_paths, push_filetypes, push_files):
     if substring_in_string(push_paths, file) or substring_in_string(push_files, file) or file_has_extension(file, push_filetypes):
             return True
     return False
-
-
-def print_directory_listing(base_dir):
-    for item in os.listdir(base_dir):
-        full_path = os.path.join(base_dir, item)
-        suffix = "/..." if os.path.isdir(full_path) else ""
-        print(f"  {full_path.removeprefix(PTERO_ROOT)}{suffix}")
     
 def clear_directory_pull(args, directory, name):
     """Remove all files/dirs inside `directory` when pulling (full wipe)."""
@@ -166,7 +159,7 @@ def clear_directory_pull(args, directory, name):
 
     print(f"{print_prefix}Deleting entire contents of {SERVER_TYPE[args.direction]}{name}: {rel_base} (commented out)")
 
-    print_directory_listing(directory)
+    print_directory_contents(directory)
 
     if should_sync:
         for item in os.listdir(directory):
