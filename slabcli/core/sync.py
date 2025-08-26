@@ -51,17 +51,12 @@ def run(args, cfg):
     push_files = list(cfg["replacements"].get("allowed_push_files", []))
     push_filetypes = list(cfg["replacements"].get("allowed_push_filetypes", []))
 
-    # if args.debug:
     # Debug output to verify the setup before proceeding
     print(clifmt.LIGHT_GRAY + "replacements dict =", replacements)
     print(clifmt.LIGHT_GRAY + "args.direction =", args.direction)
     print(clifmt.LIGHT_GRAY + "source_servers =", source_servers)
     print(clifmt.LIGHT_GRAY + "dest_servers =", dest_servers)
     print(clifmt.LIGHT_GRAY + "exempt paths =", exempt_paths)
-    print(clifmt.LIGHT_GRAY + "allowed push paths =", push_paths) 
-    print(clifmt.LIGHT_GRAY + "allowed push files =", push_files) 
-    print(clifmt.LIGHT_GRAY + "allowed push filetypes =", push_filetypes) 
-        # return
 
     if args.dry_run:
         global clicolor, print_prefix, should_sync
@@ -80,6 +75,22 @@ def run(args, cfg):
     if should_sync:
         update_sync_timestamps(args, cfg)
 
+def sync_server_files(args, cfg, source_servers, dest_servers):
+    """Dispatch sync by direction (PULL or PUSH)."""
+    for name in source_servers:
+        source_server_root = PTERO_ROOT + source_servers[name]
+        dest_server_root = PTERO_ROOT + dest_servers.get(name, "")
+
+        if not dest_server_root:
+            print(f"Skipping {name}, no matching destination.")
+            continue
+        if not os.path.exists(dest_server_root):
+            raise FileNotFoundError(f"Destination path does not exist: {dest_server_root}")
+
+        if args.direction == PULL:
+            sync_pull(args, cfg, name, source_server_root, dest_server_root)
+        elif args.direction == PUSH:
+            sync_push(args, cfg, name, source_server_root, dest_server_root)
 
 def sync_pull(args, cfg, name, source_server_root, dest_server_root):
     """Sync an entire server directory from source to destination for PULL direction."""
@@ -108,7 +119,11 @@ def sync_push(args, cfg, name, source_server_root, dest_server_root):
     push_files = list(cfg["replacements"].get("allowed_push_files", []))
     push_filetypes = list(cfg["replacements"].get("allowed_push_filetypes", []))
 
-    clear_directory_push(args, dest_server_root, push_paths, push_files)
+    print(clifmt.LIGHT_GRAY + f"Allowed paths: {push_paths}") 
+    print(clifmt.LIGHT_GRAY + f"Allowed files:", push_files) 
+    print(clifmt.LIGHT_GRAY + f"Allowed filetypes:", push_filetypes) 
+
+    clear_directory_push(dest_server_root, push_paths, push_files)
 
     for root, dirs, files in os.walk(source_server_root):
         rel_path = os.path.relpath(root, source_server_root)
@@ -138,24 +153,6 @@ def should_push_file(file, push_paths, push_filetypes, push_files):
     return False
 
 
-def sync_server_files(args, cfg, source_servers, dest_servers):
-    """Dispatch sync by direction (PULL or PUSH)."""
-    for name in source_servers:
-        source_server_root = PTERO_ROOT + source_servers[name]
-        dest_server_root = PTERO_ROOT + dest_servers.get(name, "")
-
-        if not dest_server_root:
-            print(f"Skipping {name}, no matching destination.")
-            continue
-        if not os.path.exists(dest_server_root):
-            raise FileNotFoundError(f"Destination path does not exist: {dest_server_root}")
-
-        if args.direction == PULL:
-            sync_pull(args, cfg, name, source_server_root, dest_server_root)
-        elif args.direction == PUSH:
-            sync_push(args, cfg, name, source_server_root, dest_server_root)
-
-
 def print_directory_listing(base_dir):
     for item in os.listdir(base_dir):
         full_path = os.path.join(base_dir, item)
@@ -183,7 +180,7 @@ def clear_directory_pull(args, directory, name):
                 # shutil.rmtree(path)
                 pass
 
-def clear_directory_push(args, directory, push_paths, push_files):
+def clear_directory_push(directory, push_paths, push_files):
     """Remove allowed files/dirs inside `directory` when pushing (selective delete)."""
 
     for root, dirs, files in os.walk(directory, topdown=True):
@@ -259,8 +256,7 @@ def process_config_file(args, path, replacements, exempt_paths, check_server, lo
     if new_content != content:
 
         # Resolve short path for concise console logging
-        print_path = path.removeprefix(PTERO_ROOT)
-        print_path = print_path.replace(check_server, log_server)
+        print_path = path.removeprefix(PTERO_ROOT).replace(check_server, log_server)
 
         # Check if the file's path should be exempted from processing.
         if substring_in_string(exempt_paths, path):
