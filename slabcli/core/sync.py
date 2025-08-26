@@ -6,7 +6,9 @@ from slabcli import config
 from slabcli.common.fmt import clifmt
 from slabcli.common.utils import file_has_extension, file_newer_than, substring_in_string
 
+clicolor = clifmt.GREEN
 print_prefix = ""
+should_sync = True
 
 PUSH = "push"
 PULL = "pull"
@@ -62,7 +64,10 @@ def run(args, cfg):
         # return
 
     if args.dry_run:
+        global clicolor, print_prefix, should_sync
+        clicolor = clifmt.YELLOW
         print_prefix = "[DRY RUN] "
+        should_sync = False
 
     # Step 1: Sync files from source to destination unless we're in update-only mode
     if not args.update_only:
@@ -72,7 +77,7 @@ def run(args, cfg):
     update_config_files(args, source_servers, dest_servers, replacements, exempt_paths)
 
     # Step 3: Log or persist the timestamp of this sync operation
-    if not args.dry_run:
+    if should_sync:
         update_sync_timestamps(args, cfg)
 
 
@@ -80,27 +85,21 @@ def sync_pull(args, cfg, name, source_server_root, dest_server_root):
     """Sync an entire server directory from source to destination for PULL direction."""
     clear_directory_pull(args, dest_server_root, name)
 
-    src_rel = source_server_root.removeprefix(PTERO_ROOT)
-    dst_rel = dest_server_root.removeprefix(PTERO_ROOT)
-
-    if args.dry_run:
-        print(f"[DRY RUN] Would copy entire {SERVER_TYPE[args.direction]}{name} directory: {src_rel} -> {dst_rel}")
-        print_directory_listing(source_server_root)
-    else:
-        print(f"Copying entire {SERVER_TYPE[args.direction]}{name} directory: {src_rel} -> {dst_rel} (commented out)")
+    print(f"{print_prefix}Copying entire {SERVER_TYPE[args.direction]}{name} directory: "
+          f"{source_server_root.removeprefix(PTERO_ROOT)} -> {dest_server_root.removeprefix(PTERO_ROOT)}")
+    if should_sync:
+        print("(copy commented out)")
         # shutil.copytree(source_server_root, dest_server_root, dirs_exist_ok=True)
+    else:
+        print_directory_listing(source_server_root)
 
     stage_icon = os.path.join(dest_server_root, "server-icon-staging.png")
     final_icon = os.path.join(dest_server_root, "server-icon.png")
 
     if os.path.exists(stage_icon):
-        if args.dry_run:
-            print(f"[DRY RUN] Would overwrite {final_icon.removeprefix(PTERO_ROOT)} "
-                f"with {stage_icon.removeprefix(PTERO_ROOT)}")
-        else:
-            shutil.copy2(stage_icon, final_icon)  # overwrite always
-            print(f"Overwrote {final_icon.removeprefix(PTERO_ROOT)} "
-                f"with {stage_icon.removeprefix(PTERO_ROOT)}")
+        print(f"{print_prefix}Overwriting {final_icon.removeprefix(PTERO_ROOT)} with {stage_icon.removeprefix(PTERO_ROOT)}")
+        if should_sync:
+            shutil.copy2(stage_icon, final_icon)
 
 
 def sync_push(args, cfg, name, source_server_root, dest_server_root):
@@ -123,15 +122,11 @@ def sync_push(args, cfg, name, source_server_root, dest_server_root):
 
             if should_push_file(dest_file, push_paths, push_filetypes, push_files):
                 if file_newer_than(file, last_push_time):
-                    if args.dry_run:
-                        print(f"[DRY RUN] Warning! {dest_file.removeprefix(PTERO_ROOT)} is newer than {source_file.removeprefix(PTERO_ROOT)} that is being pushed. Would not push.")
-                    else:
-                        print(f"Warning! {dest_file.removeprefix(PTERO_ROOT)} is newer than {source_file.removeprefix(PTERO_ROOT)} that is being pushed. Will not push.")
+                    print(f"{print_prefix}Warning! {dest_file.removeprefix(PTERO_ROOT)} is newer than {source_file.removeprefix(PTERO_ROOT)} that is being pushed. Will not push.")
                 else:
-                    if args.dry_run:
-                        print(f"[DRY RUN] Would copy {SERVER_TYPE[args.direction]}{name} {source_file.removeprefix(PTERO_ROOT)} -> {dest_file.removeprefix(PTERO_ROOT)}")
-                    else:
-                        print(f"Copying {SERVER_TYPE[args.direction]}{name} {source_file.removeprefix(PTERO_ROOT)} -> {dest_file.removeprefix(PTERO_ROOT)} (commented out)")
+                    print(f"{print_prefix}Copying {SERVER_TYPE[args.direction]}{name} {source_file.removeprefix(PTERO_ROOT)} -> {dest_file.removeprefix(PTERO_ROOT)}")
+                    if should_sync:
+                        print("copying commented out")
                         # os.makedirs(dest_path, exist_ok=True)
                         # shutil.copy2(source_file, dest_file)
 
@@ -169,36 +164,36 @@ def print_directory_listing(base_dir):
     
 def clear_directory_pull(args, directory, name):
     """Remove all files/dirs inside `directory` when pulling (full wipe)."""
+    
     rel_base = directory.removeprefix(PTERO_ROOT)
 
-    if args.dry_run:
-        print(f"[DRY RUN] Would delete entire contents of {SERVER_TYPE[args.direction]}{name}: {rel_base}")
-    else:
-        print(f"Deleting entire contents of {rel_base} (commented out)")
+    print(f"{print_prefix}Deleting entire contents of {SERVER_TYPE[args.direction]}{name}: {rel_base} (commented out)")
 
     print_directory_listing(directory)
 
-    if not args.dry_run:
+    if should_sync:
         for item in os.listdir(directory):
             path = os.path.join(directory, item)
             if os.path.isfile(path) or os.path.islink(path):
+                print("removing file for pull (commented out)")
                 # os.remove(path)
                 pass
             elif os.path.isdir(path):
+                print("removing dir for pull (commented out)")
                 # shutil.rmtree(path)
                 pass
 
 def clear_directory_push(args, directory, push_paths, push_files):
     """Remove allowed files/dirs inside `directory` when pushing (selective delete)."""
+
     for root, dirs, files in os.walk(directory, topdown=True):
         for dir in dirs:
             dir_path = os.path.join(root, dir)
             if substring_in_string(push_paths, dir_path):
-                if args.dry_run:
-                    print(f"[DRY RUN] Would delete dir: {dir_path.removeprefix(PTERO_ROOT)}")
-                else:
+                print(f"{print_prefix}Deleting dir: {dir_path.removeprefix(PTERO_ROOT)}")
+                if should_sync:
                     try:
-                        print(f"Deleted directory: {dir_path} (commented out)")
+                        print("push dir deletion commented out")
                         # shutil.rmtree(dir_path)
                     except OSError:
                         print(f"Could not remove non-empty or locked dir: {dir_path.removeprefix(PTERO_ROOT)}")
@@ -206,11 +201,10 @@ def clear_directory_push(args, directory, push_paths, push_files):
             path = os.path.join(root, file)
             is_plugins_folder = root.rstrip("/\\").endswith("/plugins")
             if substring_in_string(push_files, path) or (is_plugins_folder and file.lower().endswith(".jar")):
-                if args.dry_run:
-                    print(f"[DRY RUN] Would delete file: {path.removeprefix(PTERO_ROOT)}")
-                else:
-                    print(f"Deleted file: {path.removeprefix(PTERO_ROOT)} (commented out)")
-                    # os.remove(path)
+                print(f"{print_prefix}Deleting file: {path.removeprefix(PTERO_ROOT)}")
+                if should_sync:
+                    print("push file deletion commented out")
+                    os.remove(path)
 
 
 def update_config_files(args, source_servers, dest_servers, replacements, exempt_paths):
@@ -222,7 +216,7 @@ def update_config_files(args, source_servers, dest_servers, replacements, exempt
 
     servers_to_check = servers_to_log = dest_servers
     if args.dry_run and not args.update_only:
-        servers_to_check = source_servers # in this case, the files wouldn't be copied yet, so we check the source server
+        servers_to_check = source_servers # in this case, the files wouldn't be copied yet, so check the source server
 
     # Loop over each server name in the destination server map
     for server_name in servers_to_check:
@@ -239,11 +233,8 @@ def update_config_files(args, source_servers, dest_servers, replacements, exempt
                         count += 1
 
 
-    # Summarize how many files were updated or would be updated
-    if args.dry_run:
-        print(clifmt.YELLOW + "[DRY RUN] Would have updated " + f"{count} " + f)
-    else:
-        print(clifmt.GREEN + "Updated " + f"{count} " + f)
+    # Summarize number of files updated or that would be updated
+    print(f"{clicolor}{print_prefix}Updated " + f"{count} " + f)
 
 
 def process_config_file(args, path, replacements, exempt_paths, check_server, log_server):
@@ -273,25 +264,14 @@ def process_config_file(args, path, replacements, exempt_paths, check_server, lo
 
         # Check if the file's path should be exempted from processing.
         if substring_in_string(exempt_paths, path):
-            # If running in dry-run mode, print a message indicating that the file would be skipped.
-            if args.dry_run:
                 print(clifmt.LIGHT_GRAY +
-                    f"[DRY RUN] Would skip updating {print_path} as it contains an excluded directory or filetype"
-                )
-            else:
-                # In non-dry-run mode, print a message that the file is being skipped.
-                print(clifmt.LIGHT_GRAY +
-                    f"Skipping {print_path} as it contains an excluded directory or filetype"
+                    f"{print_prefix}Skipping {print_path} as it contains an excluded directory or filetype"
                 )
         else:
-            # If the file is not exempted and it's a dry-run, indicate that changes would be written.
-            if args.dry_run:
-                print(clifmt.YELLOW +
-                    f"[DRY RUN] Would write new content to {print_path} (changes: {', '.join(changes)})"
-                )
-            else:
-                # Otherwise, write the new content back to the file and print an update message.
-                print(clifmt.GREEN +f"Writing new content to {print_path} (changes: {', '.join(changes)})")
+            print(clicolor +
+                f"{print_prefix}Writing new content to {print_path} (changes: {', '.join(changes)})"
+            )
+            if should_sync:
                 with open(path, "w") as f:
                     f.write(new_content)
             # Return True to indicate that changes were made.
@@ -316,4 +296,3 @@ def update_sync_timestamps(args, cfg):
 
     # Update config file with new 'meta' values
     config.set_config(cfg)
-
