@@ -1,9 +1,8 @@
 import time as t
 from slabcli import config
 from slabcli.core import sync
-from slabcli.common.cli import clifmt
+from slabcli.common.cli import clifmt, abort_cli
 from datetime import datetime, timezone
-from slabcli.__main__ import abort_cli
 
 def add_arguments(parser):
     parser.add_argument('--debug', action='store_true', help='print internal config mappings for Staging and Production')
