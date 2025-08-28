@@ -1,5 +1,9 @@
+import argparse
 from slabcli import config
 from slabcli.core.ptero import stop_servers, start_servers, restart_servers
+
+def add_arguments(parser: argparse.ArgumentParser) -> None:
+    pass
 
 def stop(args):
     stop_servers(get_servers(args.target))
