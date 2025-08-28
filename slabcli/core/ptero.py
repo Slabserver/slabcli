@@ -34,7 +34,10 @@ def send_power_signal(server_id, signal):
     api_url = cfg["pterodactyl"].get("api_url", "") # Base API URL (e.g., "https://panel.slabserver.org/")
     api_token = cfg["pterodactyl"].get("api_token", "")
 
-    url = f"{api_url}{server_id}/power"
+    # Only use up to first hyphen in UUID
+    short_server_id = server_id.split("-", 1)[0]
+
+    url = f"{api_url}{short_server_id}/power"
     header = build_header(api_token)
     body = json.dumps({'signal': signal})
 
