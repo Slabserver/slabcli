@@ -16,8 +16,8 @@ def build_header(token: str) -> dict:
     :return: A dictionary of headers
     """
     return {
-    'Authorization': f'Bearer ptlc_{token}',
-    'Accept': 'Application/vnd.pterodactyl.v1+json',
+    'Authorization': f'Bearer {token}',
+    'Accept': 'application/json',
     'Content-Type': 'application/json'
     }
 
