@@ -2,10 +2,10 @@ from slabcli import config
 from slabcli.common.utils import http_request
 import json
 
-START_SIGNAL = "'start'"
-STOP_SIGNAL = "'stop'"
-KILL_SIGNAL = "'kill'"
-RESTART_SIGNAL = "'restart'"
+START_SIGNAL = "start"
+STOP_SIGNAL = "stop"
+KILL_SIGNAL = "kill"
+RESTART_SIGNAL = "restart"
 
 
 def build_header(token: str) -> dict:
@@ -41,7 +41,7 @@ def send_power_signal(server_id, signal):
 
     url = f"{api_url}{short_server_id}/power"
     header = build_header(api_token)
-    body = json.dumps({'signal': signal})
+    body = {f'signal': '{signal}'}
 
     response = http_request("POST", url, header, body)
 
