@@ -37,6 +37,8 @@ def send_power_signal(server_id, signal):
     # Only use up to first hyphen in UUID
     short_server_id = server_id.split("-", 1)[0]
 
+    print("signal:"+signal)
+
     url = f"{api_url}{short_server_id}/power"
     header = build_header(api_token)
     body = json.dumps({'signal': signal})
