@@ -2,10 +2,10 @@ from slabcli import config
 from slabcli.common.utils import http_request
 import json
 
-START_SIGNAL = "'start'"
-STOP_SIGNAL = "'stop'"
-KILL_SIGNAL = "'kill'"
-RESTART_SIGNAL = "'restart'"
+START_SIGNAL = "start"
+STOP_SIGNAL = "stop"
+KILL_SIGNAL = "kill"
+RESTART_SIGNAL = "restart"
 
 
 def build_header(token: str) -> dict:
