@@ -17,7 +17,7 @@ def build_header(token: str) -> dict:
     """
     return {
     'Authorization': f'Bearer {token}',
-    'Accept': 'application/json',
+    'Accept': 'Application/vnd.pterodactyl.v1+json',
     'Content-Type': 'application/json'
     }
 
