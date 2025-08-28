@@ -38,7 +38,7 @@ def send_power_signal(server_id, signal):
     header = build_header(api_token)
     body = json.dumps({'signal': signal})
 
-    response = http_request("POST", url, header=header, body=body)
+    response = http_request("POST", url, header, body)
 
     if response.status_code == 204:  # 204 == HTTP No Content
         print(f'Server {signal} initiated')
