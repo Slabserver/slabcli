@@ -3,7 +3,7 @@ from slabcli import config
 from slabcli.core import sync
 from slabcli.common.cli import clifmt
 from datetime import datetime, timezone
-from slabcli.__main__ import abort_slabcli
+from slabcli.__main__ import abort_cli
 
 def add_arguments(parser):
     parser.add_argument('--debug', action='store_true', help='print internal config mappings for Staging and Production')
@@ -19,14 +19,14 @@ def run(args):
 
     if args.debug:
         sync.run(args, cfg)
-        abort_slabcli
+        abort_cli(args.subcommand)
 
     print_cmd_info(args,cfg)
 
     if not args.skip_prompts:
         y = input("Are you sure you wish to continue? (y/N) ")
         if y != "y":
-            abort_slabcli
+            abort_cli(args.subcommand)
         if not args.dry_run:
             print(clifmt.WARNING + "Please ensure the SMP servers are powered off prior to running any push operation, to avoid any potential errors")
             print(clifmt.WARNING + "(Running the " + clifmt.WHITE + "/stop server:SMPtNetwork" + clifmt.WARNING + " modbot command in our Discord is typically the fastest way)")
@@ -34,7 +34,7 @@ def run(args):
             
             y = input(clifmt.WHITE + "Are the Proxy/Survival/Resource/Passage SMP servers powered off? (y/N) ")
             if y != "y":
-                abort_slabcli
+                abort_cli(args.subcommand)
 
     sync.run(args, cfg)
 

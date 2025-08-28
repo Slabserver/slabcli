@@ -30,3 +30,10 @@ class clifmt:
     NEGATIVE = "\033[7m"
     CROSSED = "\033[9m"
     END = "\033[0m"
+
+def abort_slabcli(subcommand: str):
+    if subcommand != "":
+        print(clifmt.FAIL + f"Aborting the SlabCLI '{subcommand}' operation")
+    else:
+        print(clifmt.FAIL + f"Aborting SlabCLI")
+    exit(1)

@@ -2,9 +2,8 @@ import argparse
 import hashlib
 from slabcli import config
 from slabcli.core import sync
-from slabcli.common.cli import clifmt
+from slabcli.common.cli import clifmt, abort_cli
 from datetime import datetime, timezone
-from slabcli.__main__ import abort_slabcli
 
 def add_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--dry-run', action='store_true', help='show which files and config changes would be pulled to Staging')
@@ -25,7 +24,7 @@ def run(args):
     if not args.skip_prompts:
         y = input(clifmt.WHITE + "Are you sure you wish to continue? (y/N) ")
         if y != "y":
-            abort_slabcli
+            abort_cli(args.subcommand)
         if not args.dry_run:
             print(clifmt.WARNING + "Please ensure the test servers are powered off prior to running any pull operation, to avoid any potential errors")
             print(clifmt.WARNING + "(Running the " + clifmt.WHITE + "/stop server:TestNetwork" + clifmt.WARNING + " modbot command in our Discord is typically the fastest way)")
@@ -33,14 +32,14 @@ def run(args):
             
             y = input(clifmt.WHITE + "Are the Proxy/Survival/Resource/Passage test servers powered off? (y/N) ")
             if y != "y":
-                abort_slabcli
+                abort_cli(args.subcommand)
         
     sync.run(args, cfg)
 
 def print_cmd_info(args, cfg):
     if args.update_only & args.sync_worlds:
         print(clifmt.FAIL + 'Error: --update-only and --sync-worlds are incompatible flags\n')
-        abort_slabcli
+        abort_cli(args.subcommand)
 
     last_pull_files = cfg.get("meta", {}).get("last_pull_files")
     last_pull_config_only = cfg.get("meta", {}).get("last_pull_cfg")
@@ -74,7 +73,7 @@ def print_cmd_info(args, cfg):
         print(clifmt.FAIL + "A pull should follow a successful push - unless Staging is being reset, you are likely to override a Staging upgrade by mistake")
         if not args.force_reset:
             print(clifmt.FAIL + "If you are certain that this is what you are trying to do, run 'slabcli pull' with the --force-reset flag to bypass this error")
-            abort_slabcli
+            abort_cli(args.subcommand)
 
 def jar_files_match(cfg):
     jar_prefix = "/srv/daemon-data/"

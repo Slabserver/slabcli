@@ -3,8 +3,6 @@ import argparse
 from slabcli.commands import power, push, pull
 from slabcli.common.cli import clifmt
 
-subcommand = ""
-
 def main():
     # Create the parser
     parser = argparse.ArgumentParser(
@@ -14,9 +12,6 @@ def main():
 
     add_subcommands(parser)
     args = parser.parse_args()
-
-    global subcommand
-    subcommand = args.subcommand
 
     print(clifmt.HEADER + f'\nSlabCLI | {args.subcommand}\n')
 
@@ -56,9 +51,3 @@ def add_subcommands(parser: argparse.ArgumentParser):
     power.add_arguments(start_parser)
     start_parser.set_defaults(func=power.start)
 
-def abort_slabcli():
-    if subcommand != "":
-        print(clifmt.FAIL + f"Aborting the SlabCLI '{subcommand}' operation")
-    else:
-        print(clifmt.FAIL + f"Aborting SlabCLI")
-    exit(1)
