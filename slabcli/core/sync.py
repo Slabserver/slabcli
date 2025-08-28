@@ -1,9 +1,11 @@
+import http
 import os
 import time
 import shutil
 import yaml
 from slabcli import config
-from slabcli.common.fmt import clifmt
+from slabcli.common.cli import clifmt
+from slabcli.core.ptero import stop_servers
 from slabcli.common.utils import file_has_extension, file_newer_than, print_directory_contents, substring_in_string
 
 clicolor = clifmt.GREEN
@@ -15,7 +17,7 @@ PULL = "pull"
 
 PTERO_ROOT = "/srv/daemon-data/"
 SERVER_TYPE = {PUSH: "SMP ", PULL: "test-"}
-SERVER_DIRECTIONS = {PUSH: ("staging", "prod"), PULL: ("prod", "staging")}
+SERVER_DIRECTIONS = {PUSH: ("staging", "production"), PULL: ("production", "staging")}
 
 def run(args, cfg):
     """Syncs Staging <-> Production servers depending on direction.
@@ -46,11 +48,6 @@ def run(args, cfg):
     source_servers = cfg["servers"].get(source, {})
     dest_servers = cfg["servers"].get(dest, {})
 
-    # Build list of paths and filetypes to include for push processing (e.g. plugins and datapacks)
-    push_paths = list(cfg["replacements"].get("allowed_push_paths", []))
-    push_files = list(cfg["replacements"].get("allowed_push_files", []))
-    push_filetypes = list(cfg["replacements"].get("allowed_push_filetypes", []))
-
     # Debug output to verify the setup before proceeding
     print(clifmt.LIGHT_GRAY + "replacements dict =", replacements)
     print(clifmt.LIGHT_GRAY + "source_servers =", source_servers)
@@ -63,14 +60,17 @@ def run(args, cfg):
         print_prefix = "[DRY RUN] "
         should_sync = False
 
-    # Step 1: Sync files from source to destination unless we're in update-only mode
     if not args.update_only:
+    # Step 1: Stop destination servers via Pterodactyl API unless we're in update-only mode
+        stop_servers(dest_servers)
+
+    # Step 2: Sync files from source to destination unless we're in update-only mode
         sync_server_files(args, cfg, source_servers, dest_servers)
 
-    # Step 2: Update server config files with any replacements
+    # Step 3: Update server config files with any replacements
     update_config_files(args, source_servers, dest_servers, replacements, exempt_paths)
 
-    # Step 3: Log or persist the timestamp of this sync operation
+    # Step 4: Log or persist the timestamp of this sync operation
     if should_sync:
         update_sync_timestamps(args, cfg)
 
@@ -109,7 +109,8 @@ def sync_pull(args, cfg, name, source_server_root, dest_server_root):
     if os.path.exists(stage_icon):
         print(f"{print_prefix}Overwriting {final_icon.removeprefix(PTERO_ROOT)} with {stage_icon.removeprefix(PTERO_ROOT)}")
         if should_sync:
-            shutil.copy2(stage_icon, final_icon)
+            print("(copy icon commented out)")
+            # shutil.copy2(stage_icon, final_icon)
 
 
 def sync_push(args, cfg, name, source_server_root, dest_server_root):
@@ -157,7 +158,6 @@ def clear_directory_pull(args, directory, name):
     rel_base = directory.removeprefix(PTERO_ROOT)
 
     print(f"{print_prefix}Deleting entire contents of {SERVER_TYPE[args.direction]}{name}: {rel_base} (commented out)")
-
     print_directory_contents(directory)
 
     if should_sync:

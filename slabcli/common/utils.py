@@ -1,5 +1,31 @@
 import os
+import requests
 
+
+def http_request(http_method: str, url: str, headers: dict = None, body: str = None, timeout: int = 10):
+    """
+    Performs a simple HTTP request
+    
+    :param http_method: HTTP method (GET, POST, PUT, DELETE, etc.)
+    :param url: The URL for the request
+    :param headers: Dictionary of HTTP headers
+    :param body: Request body (string or bytes)
+    :param timeout: Timeout in seconds (default: 10)
+    :return: requests.Response object
+    :raises: requests.RequestException if the request fails
+    """
+    try:
+        response = requests.request(
+            method=http_method,
+            url=url,
+            headers=headers,
+            data=body,
+            timeout=timeout
+        )
+        response.raise_for_status()  # Raise an error for HTTP 4xx/5xx
+        return response
+    except requests.RequestException as e:
+        raise RuntimeError(f"Request failed: {e}") from e
 
 def file_has_extension(filename, extensions):
     """Return True if filename ends with one of the given extensions."""
@@ -32,3 +58,4 @@ def substring_in_string(substrings, string):
         if substring in string:
             return True
     return False
+

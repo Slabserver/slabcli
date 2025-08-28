@@ -1,6 +1,9 @@
 import sys
 import argparse
-from slabcli.commands import push, pull
+from slabcli.commands import power, push, pull
+from slabcli.common.cli import clifmt
+
+subcommand = ""
 
 def main():
     # Create the parser
@@ -10,14 +13,19 @@ def main():
     )
 
     add_subcommands(parser)
-
     args = parser.parse_args()
+
+    global subcommand
+    subcommand = args.subcommand
+
+    print(clifmt.HEADER + f'\nSlabCLI | {args.subcommand}\n')
+
     args.func(args)
 
 if __name__ == '__main__':
     main()
 
-def add_subcommands(parser):
+def add_subcommands(parser: argparse.ArgumentParser):
     subparsers = parser.add_subparsers(title='subcommands', dest='subcommand', required=True)
 
     # Push subcommand
@@ -29,3 +37,28 @@ def add_subcommands(parser):
     pull_parser = subparsers.add_parser('pull', help='Pull state of Production to Staging')
     pull.add_arguments(pull_parser)
     pull_parser.set_defaults(func=pull.run)
+
+    # Stop subcommand
+    stop_parser = subparsers.add_parser('stop', help='Stop Staging or Production servers')
+    stop_parser.add_argument("target", choices=["production", "staging"], help="Servers to stop")
+    power.add_arguments(stop_parser)
+    stop_parser.set_defaults(func=power.stop)
+
+    # Start subcommand
+    start_parser = subparsers.add_parser('start', help='Start Staging or Production servers')
+    start_parser.add_argument("target", choices=["production", "staging"], help="Servers to start")
+    power.add_arguments(start_parser)
+    start_parser.set_defaults(func=power.start)
+
+    # Restart subcommand
+    start_parser = subparsers.add_parser('restart', help='Restart Staging or Production servers')
+    start_parser.add_argument("target", choices=["production", "staging"], help="Servers to restart")
+    power.add_arguments(start_parser)
+    start_parser.set_defaults(func=power.start)
+
+def abort_slabcli():
+    if subcommand != "":
+        print(clifmt.FAIL + f"Aborting the SlabCLI '{subcommand}' operation")
+    else:
+        print(clifmt.FAIL + f"Aborting SlabCLI")
+    exit(1)
