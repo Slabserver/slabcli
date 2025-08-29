@@ -86,9 +86,9 @@ def are_servers_at_state(servers, desired_state):
             if status != desired_state:
                 time.sleep(QUERY_INTERVAL)
                 elapsed += QUERY_INTERVAL
-        print("✅ All servers successfully stopped.")
+        print(f"✅ All servers successfully {desired_state}.")
         return True
-    print("❌ Servers did not shut down within 150 seconds")
+    print(f"❌ Servers were not successfully {desired_state} within 150 seconds")
     return False
 
 def stop_servers(servers) -> bool:
