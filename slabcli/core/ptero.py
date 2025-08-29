@@ -1,3 +1,4 @@
+import time
 from slabcli import config
 from slabcli.common.utils import http_request
 import json
@@ -7,6 +8,14 @@ STOP_SIGNAL = "stop"
 KILL_SIGNAL = "kill"
 RESTART_SIGNAL = "restart"
 
+QUERY_INTERVAL = 5   # seconds between checks
+QUERY_TIMEOUT = 150  # total seconds
+
+def get_api_cfg():
+    cfg = config.load_config()
+    api_url = cfg["pterodactyl"].get("api_url", "") # Base API URL (e.g., "https://panel.slabserver.org/")
+    api_token = cfg["pterodactyl"].get("api_token", "")
+    return api_token, api_url
 
 def build_header(token: str) -> dict:
     """
@@ -21,6 +30,23 @@ def build_header(token: str) -> dict:
     'Content-Type': 'application/json'
     }
 
+def get_server_details(server_id: str):
+
+    api_token, api_url = get_api_cfg()
+
+    # Only use up to first hyphen in UUID
+    short_server_id = server_id.split("-", 1)[0]
+
+    header = build_header(api_token)
+    url = f"{api_url}{short_server_id}"
+    response = http_request("GET", url, header)
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        raise RuntimeError(f"Unexpected status code: {response.status_code}")
+
+
 def send_power_signal(server_id, signal):
     """
     Sends a power signal operation to a Pterodactyl server via API.
@@ -30,14 +56,11 @@ def send_power_signal(server_id, signal):
     :return: None
     :raises: RuntimeError if the request fails or status is unexpected
     """
-    cfg = config.load_config()
-    api_url = cfg["pterodactyl"].get("api_url", "") # Base API URL (e.g., "https://panel.slabserver.org/")
-    api_token = cfg["pterodactyl"].get("api_token", "")
+
+    api_token, api_url = get_api_cfg()
 
     # Only use up to first hyphen in UUID
     short_server_id = server_id.split("-", 1)[0]
-
-    print("signal:"+signal)
 
     url = f"{api_url}{short_server_id}/power"
     header = build_header(api_token)
@@ -50,9 +73,20 @@ def send_power_signal(server_id, signal):
     else:
         raise RuntimeError(f"Unexpected status code: {response.status_code}")
     
-def stop_servers(servers):
+def stop_servers(servers) -> bool:
     for s in servers:
         send_power_signal(servers[s], STOP_SIGNAL)
+    elapsed = 0
+
+    while elapsed < QUERY_TIMEOUT:
+        if are_servers_offline(servers):
+            print("✅ Servers successfully stopped.")
+            return True
+        time.sleep(QUERY_INTERVAL)
+        elapsed += QUERY_INTERVAL
+
+    print("❌ Servers did not shut down within 150 seconds")
+    return False
 
 def start_servers(servers):
     for s in servers:
@@ -61,3 +95,19 @@ def start_servers(servers):
 def restart_servers(servers):
     for s in servers:
         send_power_signal(servers[s], RESTART_SIGNAL)
+
+def are_servers_offline(servers):
+    for s in servers:
+        data = get_server_details(servers[s])
+        status = data["attributes"].get("status")
+        if status != "offline":
+            return False
+    return True
+
+def are_servers_running(servers):
+    for s in servers:
+        data = get_server_details(servers[s])
+        status = data["attributes"].get("status")
+        if status != "running":
+            return False
+    return True
