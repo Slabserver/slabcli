@@ -8,6 +8,9 @@ STOP_SIGNAL = "stop"
 KILL_SIGNAL = "kill"
 RESTART_SIGNAL = "restart"
 
+ONLINE_STATE = "running"
+OFFLINE_STATE = "offline"
+
 QUERY_INTERVAL = 5   # seconds between checks
 QUERY_TIMEOUT = 150  # total seconds
 
@@ -73,41 +76,32 @@ def send_power_signal(server_id, signal):
         print(f'Server {signal} initiated')
     else:
         raise RuntimeError(f"Unexpected status code: {response.status_code}")
-    
+
+def are_servers_at_state(servers, desired_state):
+    elapsed = 0
+    while elapsed < QUERY_TIMEOUT:
+        for s in servers:
+            status = get_server_status(servers[s])
+            print("status is:"+status)
+            if status != desired_state:
+                time.sleep(QUERY_INTERVAL)
+                elapsed += QUERY_INTERVAL
+        print("✅ All servers successfully stopped.")
+        return True
+    print("❌ Servers did not shut down within 150 seconds")
+    return False
+
 def stop_servers(servers) -> bool:
     for s in servers:
         send_power_signal(servers[s], STOP_SIGNAL)
-    elapsed = 0
-
-    while elapsed < QUERY_TIMEOUT:
-        if are_servers_offline(servers):
-            print("✅ Servers successfully stopped.")
-            return True
-        time.sleep(QUERY_INTERVAL)
-        elapsed += QUERY_INTERVAL
-
-    print("❌ Servers did not shut down within 150 seconds")
-    return False
+        are_servers_at_state(servers, OFFLINE_STATE)
 
 def start_servers(servers):
     for s in servers:
         send_power_signal(servers[s], START_SIGNAL)
+        are_servers_at_state(servers, ONLINE_STATE)
 
 def restart_servers(servers):
     for s in servers:
         send_power_signal(servers[s], RESTART_SIGNAL)
-
-def are_servers_offline(servers):
-    for s in servers:
-        status = get_server_status(servers[s])
-        print("status is:"+status)
-        if status != "offline":
-            return False
-    return True
-
-def are_servers_running(servers):
-    for s in servers:
-        status = get_server_status(servers[s])
-        if status != "running":
-            return False
-    return True
+        are_servers_at_state(servers, ONLINE_STATE)
