@@ -94,14 +94,14 @@ def are_servers_at_state(servers, desired_state):
 def stop_servers(servers) -> bool:
     for s in servers:
         send_power_signal(servers[s], STOP_SIGNAL)
-        are_servers_at_state(servers, OFFLINE_STATE)
+    are_servers_at_state(servers, OFFLINE_STATE)
 
 def start_servers(servers):
     for s in servers:
         send_power_signal(servers[s], START_SIGNAL)
-        are_servers_at_state(servers, ONLINE_STATE)
+    are_servers_at_state(servers, ONLINE_STATE)
 
 def restart_servers(servers):
     for s in servers:
         send_power_signal(servers[s], RESTART_SIGNAL)
-        are_servers_at_state(servers, ONLINE_STATE)
+    are_servers_at_state(servers, ONLINE_STATE)
