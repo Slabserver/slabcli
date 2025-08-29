@@ -72,9 +72,7 @@ def send_power_signal(server_id, signal):
 
     response = http_request("POST", url, header, body)
 
-    if response.status_code == 204:  # 204 == HTTP No Content
-        print(f'Server {signal} initiated')
-    else:
+    if response.status_code != 204:  # 204 == HTTP No Content
         raise RuntimeError(f"Unexpected status code: {response.status_code}")
 
 def are_servers_at_state(servers, desired_state):
@@ -82,7 +80,6 @@ def are_servers_at_state(servers, desired_state):
     while elapsed < QUERY_TIMEOUT:
         for s in servers:
             status = get_server_status(servers[s])
-            print("status is:"+status)
             if status != desired_state:
                 time.sleep(QUERY_INTERVAL)
                 elapsed += QUERY_INTERVAL

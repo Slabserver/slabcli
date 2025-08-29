@@ -5,7 +5,6 @@ from slabcli.common.cli import clifmt, abort_cli
 from datetime import datetime, timezone
 
 def add_arguments(parser):
-    parser.add_argument('--debug', action='store_true', help='print internal config mappings for Staging and Production')
     parser.add_argument('--dry-run', action='store_true', help='show which files and config changes would be pushed to Production')
     parser.add_argument('--update-only', action='store_true', help='push the config changes only, with no copying of files at all')
     parser.add_argument('--skip-prompts', '-y', action='store_true', help='skips input prompts, but sets --dry-run. Useful for writing to log files.')
@@ -13,12 +12,7 @@ def add_arguments(parser):
 def run(args):
     cfg = config.load_config()
     args.direction = sync.PUSH
-    args.sync_worlds = False
     args.dry_run = True if args.skip_prompts else False
-
-    if args.debug:
-        sync.run(args, cfg)
-        abort_cli(args.subcommand)
 
     print_cmd_info(args,cfg)
 
@@ -51,7 +45,7 @@ def print_cmd_info(args, cfg):
         print(clifmt.OKCYAN + f"Last update of Production config files from SlabCLI's config.yml occurred at: {ts_readable}")
     print('')
 
-    print(clifmt.WARNING + 'This will push files and folders defined in config.yml from Staging to Production, and update files with values defined in SlabCLI\'s config.yml')
+    print(clifmt.WARNING + 'This will stop the Production servers, push files and folders defined in config.yml from Staging to Production, and update files with values defined in SlabCLI\'s config.yml')
     print(clifmt.BOLD + 'Please ensure Staging has been tested, Production has very recent backups, & lockdown is set in the Bouncer/persistent.yml if required.')
 
     if not args.dry_run:

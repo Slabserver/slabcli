@@ -2,12 +2,13 @@ import argparse
 import hashlib
 from slabcli import config
 from slabcli.core import sync
-from slabcli.common.cli import clifmt, abort_cli
 from datetime import datetime, timezone
+from slabcli.common.cli import clifmt, abort_cli
+from slabcli.core.ptero import start_servers, are_servers_at_state
+
 
 def add_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--dry-run', action='store_true', help='show which files and config changes would be pulled to Staging')
-    parser.add_argument('--sync-worlds', action='store_true', help='pull the Survival/Resource/Passage worlds (disabled by default)')
     parser.add_argument('--update-only', action='store_true', help='pull the config changes only, with no copying of files at all')
     parser.add_argument('--force-reset', action='store_true', help='force Staging to be reset by Production even if .jar files differ')
     parser.add_argument('--skip-prompts', '-y', action='store_true', help='skips input prompts, but sets --dry-run. Useful for writing to log files.')
@@ -25,22 +26,10 @@ def run(args):
         y = input(clifmt.WHITE + "Are you sure you wish to continue? (y/N) ")
         if y != "y":
             abort_cli(args.subcommand)
-        if not args.dry_run:
-            print(clifmt.WARNING + "Please ensure the test servers are powered off prior to running any pull operation, to avoid any potential errors")
-            print(clifmt.WARNING + "(Running the " + clifmt.WHITE + "/stop server:TestNetwork" + clifmt.WARNING + " modbot command in our Discord is typically the fastest way)")
-            print('')
-            
-            y = input(clifmt.WHITE + "Are the Proxy/Survival/Resource/Passage test servers powered off? (y/N) ")
-            if y != "y":
-                abort_cli(args.subcommand)
         
     sync.run(args, cfg)
 
 def print_cmd_info(args, cfg):
-    if args.update_only & args.sync_worlds:
-        print(clifmt.FAIL + 'Error: --update-only and --sync-worlds are incompatible flags\n')
-        abort_cli(args.subcommand)
-
     last_pull_files = cfg.get("meta", {}).get("last_pull_files")
     last_pull_config_only = cfg.get("meta", {}).get("last_pull_cfg")
 
@@ -58,14 +47,8 @@ def print_cmd_info(args, cfg):
         print(clifmt.WARNING + 'This will only update existing config files with values defined in SlabCLI\'s config.yml, as --update-only is set')
         print(clifmt.BOLD + 'Are you certain that Staging has all required config files from Production?')
     else:
-        print(clifmt.WARNING + 'This will pull the Slabserver files and folders from Production to Staging, updating files with values defined in SlabCLI\'s config.yml')
+        print(clifmt.WARNING + 'This will stop the Staging servers, pull the Slabserver files and folders from Production to Staging, and update files with values defined in SlabCLI\'s config.yml')
         print(clifmt.BOLD + 'Please ensure you are ready for any Staging changes to be reset by Production')
-    print('')
-
-    if args.sync_worlds:
-        print(clifmt.WARNING + 'This will pull the Survival/Resource/Passage worlds, as --sync-worlds is set')
-    else:
-        print(clifmt.WARNING + 'This will NOT pull the Survival/Resource/Passage world files, as --sync-worlds isn\'t set')
     print('')
 
     if not jar_files_match(cfg) and not args.update_only:

@@ -5,7 +5,7 @@ import shutil
 import yaml
 from slabcli import config
 from slabcli.common.cli import clifmt
-from slabcli.core.ptero import stop_servers
+from slabcli.core.ptero import stop_servers, are_servers_at_state
 from slabcli.common.utils import file_has_extension, file_newer_than, print_directory_contents, substring_in_string
 
 clicolor = clifmt.GREEN
@@ -61,8 +61,10 @@ def run(args, cfg):
         should_sync = False
 
     if not args.update_only:
-    # Step 1: Stop destination servers via Pterodactyl API unless we're in update-only mode
-        stop_servers(dest_servers)
+    # Step 1: Stop destination servers via Pterodactyl API unless we're in update-only or dry-run mode
+        if should_sync:
+            stop_servers(dest_servers)
+            are_servers_at_state(dest_servers, "offline")
 
     # Step 2: Sync files from source to destination unless we're in update-only mode
         sync_server_files(args, cfg, source_servers, dest_servers)
