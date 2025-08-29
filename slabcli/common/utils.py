@@ -15,11 +15,11 @@ def http_request(http_method: str, url: str, headers: dict = None, body: str = N
     :raises: requests.RequestException if the request fails
     """
     try:
-        print("DEBUG REQUEST:")
-        print(f"  Method: {http_method}")
-        print(f"  URL: {url}")
-        print(f"  Headers: {headers}")
-        print(f"  Body: {body}")
+        # print("DEBUG REQUEST:")
+        # print(f"  Method: {http_method}")
+        # print(f"  URL: {url}")
+        # print(f"  Headers: {headers}")
+        # print(f"  Body: {body}")
     
         response = requests.request(
             method=http_method,
@@ -29,9 +29,9 @@ def http_request(http_method: str, url: str, headers: dict = None, body: str = N
             timeout=timeout
         )
 
-        print("DEBUG RESPONSE:")
-        print(f"  Status: {response.status_code}")
-        print(f"  Body: {response.text}")
+        # print("DEBUG RESPONSE:")
+        # print(f"  Status: {response.status_code}")
+        # print(f"  Body: {response.text}")
 
         response.raise_for_status()  # Raise an error for HTTP 4xx/5xx
         return response
