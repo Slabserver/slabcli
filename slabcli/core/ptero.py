@@ -30,7 +30,7 @@ def build_header(token: str) -> dict:
     'Content-Type': 'application/json'
     }
 
-def get_server_details(server_id: str):
+def get_server_status(server_id: str):
 
     api_token, api_url = get_api_cfg()
 
@@ -38,11 +38,12 @@ def get_server_details(server_id: str):
     short_server_id = server_id.split("-", 1)[0]
 
     header = build_header(api_token)
-    url = f"{api_url}{short_server_id}"
+    url = f"{api_url}{short_server_id}/resources"
     response = http_request("GET", url, header)
 
     if response.status_code == 200:
-        return response.json()
+        data = response.json()
+        return data['attributes']['current_state']
     else:
         raise RuntimeError(f"Unexpected status code: {response.status_code}")
 
@@ -98,16 +99,15 @@ def restart_servers(servers):
 
 def are_servers_offline(servers):
     for s in servers:
-        data = get_server_details(servers[s])
-        status = data["attributes"].get("status")
+        status = get_server_status(servers[s])
+        print("status is:"+status)
         if status != "offline":
             return False
     return True
 
 def are_servers_running(servers):
     for s in servers:
-        data = get_server_details(servers[s])
-        status = data["attributes"].get("status")
+        status = get_server_status(servers[s])
         if status != "running":
             return False
     return True
