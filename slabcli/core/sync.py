@@ -5,7 +5,7 @@ import shutil
 import yaml
 from slabcli import config
 from slabcli.common.cli import clifmt
-from slabcli.core.ptero import stop_servers, are_servers_at_state
+from slabcli.core.ptero import stop_servers, restart_servers
 from slabcli.common.utils import file_has_extension, file_newer_than, print_directory_contents, substring_in_string
 
 clicolor = clifmt.GREEN
@@ -64,7 +64,6 @@ def run(args, cfg):
     # Step 1: Stop destination servers via Pterodactyl API unless we're in update-only or dry-run mode
         if should_sync:
             stop_servers(dest_servers)
-            are_servers_at_state(dest_servers, "offline")
 
     # Step 2: Sync files from source to destination unless we're in update-only mode
         sync_server_files(args, cfg, source_servers, dest_servers)
@@ -75,6 +74,12 @@ def run(args, cfg):
     # Step 4: Log or persist the timestamp of this sync operation
     if should_sync:
         update_sync_timestamps(args, cfg)
+
+    # Step 5: Optionally restart the servers
+    if not args.dry_run:
+        y = input(clifmt.WHITE + f"Would you like to restart the {dest.capitalize()} servers? (y/N) ")
+        if y == "y":
+            restart_servers(dest_servers)
 
 def sync_server_files(args, cfg, source_servers, dest_servers):
     """Dispatch sync by direction (PULL or PUSH)."""
@@ -100,8 +105,7 @@ def sync_pull(args, cfg, name, source_server_root, dest_server_root):
     print(f"{print_prefix}Copying entire {SERVER_TYPE[args.direction]}{name} directory: "
           f"{source_server_root.removeprefix(PTERO_ROOT)} -> {dest_server_root.removeprefix(PTERO_ROOT)}")
     if should_sync:
-        print("(copy commented out)")
-        # shutil.copytree(source_server_root, dest_server_root, dirs_exist_ok=True)
+        shutil.copytree(source_server_root, dest_server_root, dirs_exist_ok=True)
     else:
         print_directory_contents(source_server_root)
 
@@ -111,8 +115,7 @@ def sync_pull(args, cfg, name, source_server_root, dest_server_root):
     if os.path.exists(stage_icon):
         print(f"{print_prefix}Overwriting {final_icon.removeprefix(PTERO_ROOT)} with {stage_icon.removeprefix(PTERO_ROOT)}")
         if should_sync:
-            print("(copy icon commented out)")
-            # shutil.copy2(stage_icon, final_icon)
+            shutil.copy2(stage_icon, final_icon)
 
 
 def sync_push(args, cfg, name, source_server_root, dest_server_root):
@@ -143,9 +146,8 @@ def sync_push(args, cfg, name, source_server_root, dest_server_root):
                 else:
                     print(f"{print_prefix}Copying {SERVER_TYPE[args.direction]}{name} {source_file.removeprefix(PTERO_ROOT)} -> {dest_file.removeprefix(PTERO_ROOT)}")
                     if should_sync:
-                        print("copying commented out")
-                        # os.makedirs(dest_path, exist_ok=True)
-                        # shutil.copy2(source_file, dest_file)
+                        os.makedirs(dest_path, exist_ok=True)
+                        shutil.copy2(source_file, dest_file)
 
 
 def should_push_file(file, push_paths, push_filetypes, push_files):
@@ -166,12 +168,10 @@ def clear_directory_pull(args, directory, name):
         for item in os.listdir(directory):
             path = os.path.join(directory, item)
             if os.path.isfile(path) or os.path.islink(path):
-                print("removing file for pull (commented out)")
-                # os.remove(path)
+                os.remove(path)
                 pass
             elif os.path.isdir(path):
-                print("removing dir for pull (commented out)")
-                # shutil.rmtree(path)
+                shutil.rmtree(path)
                 pass
 
 def clear_directory_push(directory, push_paths, push_files):
@@ -184,8 +184,7 @@ def clear_directory_push(directory, push_paths, push_files):
                 print(f"{print_prefix}Deleting dir: {dir_path.removeprefix(PTERO_ROOT)}")
                 if should_sync:
                     try:
-                        print("push dir deletion commented out")
-                        # shutil.rmtree(dir_path)
+                        shutil.rmtree(dir_path)
                     except OSError:
                         print(f"Could not remove non-empty or locked dir: {dir_path.removeprefix(PTERO_ROOT)}")
         for file in files:

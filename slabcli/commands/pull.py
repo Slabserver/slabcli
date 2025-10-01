@@ -4,25 +4,21 @@ from slabcli import config
 from slabcli.core import sync
 from datetime import datetime, timezone
 from slabcli.common.cli import clifmt, abort_cli
-from slabcli.core.ptero import start_servers, are_servers_at_state
+from slabcli.core.ptero import restart_servers, are_servers_at_state
 
 
 def add_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument('--dry-run', action='store_true', help='show which files and config changes would be pulled to Staging')
     parser.add_argument('--update-only', action='store_true', help='pull the config changes only, with no copying of files at all')
     parser.add_argument('--force-reset', action='store_true', help='force Staging to be reset by Production even if .jar files differ')
-    parser.add_argument('--skip-prompts', '-y', action='store_true', help='skips input prompts, but sets --dry-run. Useful for writing to log files.')
+    parser.add_argument('--dry-run', '-y', action='store_true', help='skip prompts, and only show which changes would be pulled to Staging. Useful for writing to log files.')
 
 def run(args):
     cfg = config.load_config()
     args.direction = sync.PULL
 
-    if args.skip_prompts:
-        args.dry_run = True
-
     print_cmd_info(args,cfg)
     
-    if not args.skip_prompts:
+    if not args.dry_run:
         y = input(clifmt.WHITE + "Are you sure you wish to continue? (y/N) ")
         if y != "y":
             abort_cli(args.subcommand)

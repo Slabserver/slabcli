@@ -49,5 +49,5 @@ def add_subcommands(parser: argparse.ArgumentParser):
     start_parser = subparsers.add_parser('restart', help='Restart Staging or Production servers')
     start_parser.add_argument("target", choices=["production", "staging"], help="Servers to restart")
     power.add_arguments(start_parser)
-    start_parser.set_defaults(func=power.start)
+    start_parser.set_defaults(func=power.restart)
 
