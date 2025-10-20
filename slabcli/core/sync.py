@@ -59,8 +59,8 @@ def run(args, cfg):
         clicolor = clifmt.YELLOW
         print_prefix = "[DRY RUN] "
         should_sync = False
-        print(f"Running in {print_prefix}' mode...")
-        time.sleep(2.5)
+        print(f"Running {args.direction} in {print_prefix}mode...")
+        time.sleep(3)
 
     if not args.update_only:
     # Step 1: Stop destination servers via Pterodactyl API unless we're in update-only or dry-run mode
