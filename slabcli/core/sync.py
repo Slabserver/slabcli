@@ -161,7 +161,7 @@ def clear_directory_pull(args, directory, name):
     
     rel_base = directory.removeprefix(PTERO_ROOT)
 
-    print(f"{print_prefix}Deleting entire contents of {SERVER_TYPE[args.direction]}{name}: {rel_base} (commented out)")
+    print(f"{print_prefix}Deleting entire contents of {SERVER_TYPE[args.direction]}{name}: {rel_base}")
     print_directory_contents(directory)
 
     if should_sync:
@@ -193,7 +193,6 @@ def clear_directory_push(directory, push_paths, push_files):
             if substring_in_string(push_files, path) or (is_plugins_folder and file.lower().endswith(".jar")):
                 print(f"{print_prefix}Deleting file: {path.removeprefix(PTERO_ROOT)}")
                 if should_sync:
-                    print("push file deletion commented out")
                     os.remove(path)
 
 
