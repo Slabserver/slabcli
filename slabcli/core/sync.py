@@ -102,7 +102,7 @@ def sync_pull(args, cfg, name, source_server_root, dest_server_root):
     """Sync an entire server directory from source to destination for PULL direction."""
     clear_directory_pull(args, dest_server_root, name)
 
-    print(f"{print_prefix}Copying entire {SERVER_TYPE[args.direction]}{name} directory: "
+    print(f"{print_prefix}Recursively copying SMP {name} directory to {SERVER_TYPE[args.direction]}{name}: "
           f"{source_server_root.removeprefix(PTERO_ROOT)} -> {dest_server_root.removeprefix(PTERO_ROOT)}")
     if should_sync:
         shutil.copytree(source_server_root, dest_server_root, dirs_exist_ok=True)
