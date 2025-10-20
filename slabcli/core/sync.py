@@ -199,7 +199,7 @@ def clear_directory_push(directory, push_paths, push_files):
 def update_config_files(args, source_servers, dest_servers, replacements, exempt_paths):
     """Apply replacements to config files in destination folders."""
 
-    print(clifmt.WHITE + "Updating config files...")
+    print(clifmt.WHITE + f"{print_prefix}Updating config files...")
     count = 0  # Track how many files were (or would be) updated
     f = "files" if count != 1 else "file" # Setup ternary vars for print
 
@@ -210,7 +210,7 @@ def update_config_files(args, source_servers, dest_servers, replacements, exempt
     # Loop over each server name in the destination server map
     for server_name in servers_to_check:
         # Construct full path to the server's config files
-        print(clifmt.WHITE + f"Checking {SERVER_TYPE[args.direction]}{server_name} server: " + PTERO_ROOT + servers_to_log[server_name])
+        print(clifmt.WHITE + f"{print_prefix}Checking {SERVER_TYPE[args.direction]}{server_name} server: " + PTERO_ROOT + servers_to_log[server_name])
 
         # Walk through all directories and files within the server path
         for root, dirs, files in os.walk(PTERO_ROOT + servers_to_check[server_name]):
