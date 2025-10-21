@@ -111,13 +111,21 @@ def sync_pull(args, cfg, name, source_server_root, dest_server_root):
     else:
         print_directory_contents(source_server_root)
 
+    # Cosmetic change for Staging, substitute the server icon to differentiate them in Minecraft's server browser
     stage_icon = os.path.join(dest_server_root, "server-icon-staging.png")
     final_icon = os.path.join(dest_server_root, "server-icon.png")
-
     if os.path.exists(stage_icon):
         print(f"{print_prefix}Overwriting {final_icon.removeprefix(PTERO_ROOT)} with {stage_icon.removeprefix(PTERO_ROOT)}")
         if should_sync:
             shutil.copy2(stage_icon, final_icon)
+
+    y = input(clifmt.WHITE + f"[DEBUG] {SERVER_TYPE[args.direction]}{name} done...")
+    if y != "y":
+        print(clifmt.FAIL + f"[DEBUG] Aborting SlabCLI")
+        exit(1)
+    else:
+        print(clifmt.FAIL + f"[DEBUG] Continuing SLABCLI pull...")
+
 
 
 def sync_push(args, cfg, name, source_server_root, dest_server_root):
