@@ -119,7 +119,8 @@ def sync_pull(args, cfg, name, source_server_root, dest_server_root):
         if should_sync:
             shutil.copy2(stage_icon, final_icon)
 
-    y = input(clifmt.WHITE + f"[DEBUG] {SERVER_TYPE[args.direction]}{name} done...")
+    print(clifmt.FAIL + f"[DEBUG] done with {SERVER_TYPE[args.direction]}{name} ")
+    y = input(clifmt.WHITE + f"[DEBUG] continue?")
     if y != "y":
         print(clifmt.FAIL + f"[DEBUG] Aborting SlabCLI")
         exit(1)
