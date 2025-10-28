@@ -1,3 +1,4 @@
+import os
 import argparse
 import hashlib
 from slabcli import config
@@ -47,7 +48,7 @@ def print_cmd_info(args, cfg):
         print(clifmt.BOLD + 'Please ensure you are ready for any Staging changes to be reset by Production')
     print('')
 
-    if not jar_files_match(cfg) and not args.update_only:
+    if not jar_files_match(cfg) and not args.update_only and not args.dry_run:
         print(clifmt.FAIL + "Error: Staging and Production are using different server .jar files - Staging is likely being upgraded to a newer Minecraft version")
         print(clifmt.FAIL + "A pull should follow a successful push - unless Staging is being reset, you are likely to override a Staging upgrade by mistake")
         if not args.force_reset:
@@ -72,6 +73,11 @@ def jar_files_match(cfg):
 
         prod_jar = f"{jar_prefix}{prod_id}{jar_name}"
         staging_jar = f"{jar_prefix}{staging_id}{jar_name}"
+
+        # Check file existence
+        if not os.path.exists(prod_jar) or not os.path.exists(staging_jar):
+            print(f"Missing jar for {server}: {prod_jar} or {staging_jar}")
+            return False
 
         if not files_match(prod_jar, staging_jar):
             return False

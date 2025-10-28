@@ -119,16 +119,6 @@ def sync_pull(args, cfg, name, source_server_root, dest_server_root):
         if should_sync:
             shutil.copy2(stage_icon, final_icon)
 
-    print(clifmt.FAIL + f"[DEBUG] done with {SERVER_TYPE[args.direction]}{name} ")
-    y = input(clifmt.WHITE + f"[DEBUG] continue?")
-    if y != "y":
-        print(clifmt.FAIL + f"[DEBUG] Aborting SlabCLI")
-        exit(1)
-    else:
-        print(clifmt.FAIL + f"[DEBUG] Continuing SLABCLI pull...")
-
-
-
 def sync_push(args, cfg, name, source_server_root, dest_server_root):
     """Sync selected files from source to destination for PUSH direction."""
     push_paths = list(cfg["replacements"].get("allowed_push_paths", []))
