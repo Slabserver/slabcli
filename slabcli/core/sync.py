@@ -129,7 +129,7 @@ def sync_push(args, cfg, name, source_server_root, dest_server_root, exempt_push
     print(clifmt.LIGHT_GRAY + f"Allowed files:", push_files) 
     print(clifmt.LIGHT_GRAY + f"Allowed filetypes:", push_filetypes) 
 
-    clear_directory_push(dest_server_root, push_paths, push_files)
+    clear_directory_push(args, name, dest_server_root, push_paths, push_files)
 
     for root, dirs, files in os.walk(source_server_root):
         rel_path = os.path.relpath(root, source_server_root)
@@ -178,8 +178,10 @@ def clear_directory_pull(args, directory, name):
                 shutil.rmtree(path)
                 pass
 
-def clear_directory_push(directory, push_paths, push_files):
+def clear_directory_push(args, name, directory, push_paths, push_files):
     """Remove allowed files/dirs inside `directory` when pushing (selective delete)."""
+
+    print(f"{print_prefix}Checking files to delete for {SERVER_TYPE[args.direction]}{name}")
 
     for root, dirs, files in os.walk(directory, topdown=True):
         for dir in dirs:
