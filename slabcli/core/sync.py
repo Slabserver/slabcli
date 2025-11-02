@@ -68,7 +68,7 @@ def run(args, cfg):
             stop_servers(dest_servers)
 
     # Step 2: Sync files from source to destination unless we're in update-only mode
-        sync_server_files(args, cfg, source_servers, dest_servers)
+        sync_server_files(args, cfg, source_servers, dest_servers, exempt_paths)
 
     # Step 3: Update server config files with any replacements
     update_config_files(args, source_servers, dest_servers, replacements, exempt_paths)
@@ -83,7 +83,7 @@ def run(args, cfg):
         if y == "y":
             restart_servers(dest_servers)
 
-def sync_server_files(args, cfg, source_servers, dest_servers):
+def sync_server_files(args, cfg, source_servers, dest_servers, exempt_paths):
     """Dispatch sync by direction (PULL or PUSH)."""
     for name in source_servers:
         source_server_root = PTERO_ROOT + source_servers[name]
@@ -98,7 +98,7 @@ def sync_server_files(args, cfg, source_servers, dest_servers):
         if args.direction == PULL:
             sync_pull(args, cfg, name, source_server_root, dest_server_root)
         elif args.direction == PUSH:
-            sync_push(args, cfg, name, source_server_root, dest_server_root)
+            sync_push(args, cfg, name, source_server_root, dest_server_root, exempt_paths)
 
 def sync_pull(args, cfg, name, source_server_root, dest_server_root):
     """Sync an entire server directory from source to destination for PULL direction."""
@@ -119,7 +119,7 @@ def sync_pull(args, cfg, name, source_server_root, dest_server_root):
         if should_sync:
             shutil.copy2(stage_icon, final_icon)
 
-def sync_push(args, cfg, name, source_server_root, dest_server_root):
+def sync_push(args, cfg, name, source_server_root, dest_server_root, exempt_push_paths):
     """Sync selected files from source to destination for PUSH direction."""
     push_paths = list(cfg["replacements"].get("allowed_push_paths", []))
     push_files = list(cfg["replacements"].get("allowed_push_files", []))
@@ -141,7 +141,7 @@ def sync_push(args, cfg, name, source_server_root, dest_server_root):
             source_file = os.path.join(root, file)
             dest_file = os.path.join(dest_path, file)
 
-            if should_push_file(dest_file, push_paths, push_filetypes, push_files):
+            if should_push_file(dest_file, push_paths, push_filetypes, push_files, exempt_push_paths):
                 if file_newer_than(file, last_push_time):
                     print(f"{print_prefix}Warning! {dest_file.removeprefix(PTERO_ROOT)} is newer than {source_file.removeprefix(PTERO_ROOT)} that is being pushed. Will not push.")
                 else:
@@ -151,10 +151,13 @@ def sync_push(args, cfg, name, source_server_root, dest_server_root):
                         shutil.copy2(source_file, dest_file)
 
 
-def should_push_file(file, push_paths, push_filetypes, push_files):
+def should_push_file(file, push_paths, push_filetypes, push_files, exempt_push_paths):
     """Return True if a file should be pushed based on path, extension, and exemption rules."""
+    # Check that the file has a valid filetype, valid filename, or is part of a valid folder, in order to be pushed
     if substring_in_string(push_paths, file) or substring_in_string(push_files, file) or file_has_extension(file, push_filetypes):
-            return True
+            # Check that the file isn't part of an exempt folder
+            if not substring_in_string(exempt_push_paths, file):
+                return True
     return False
     
 def clear_directory_pull(args, directory, name):
