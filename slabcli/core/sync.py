@@ -245,7 +245,9 @@ def update_config_files(args, source_servers, dest_servers, replacements, exempt
  #TODO: remove this horrible edge case for CoreProtect/MineProtect in the future
 def update_coreprotect_config_files(args, path, replacements, exempt_paths, check_server, log_server):
     if "/plugins/CoreProtect" in path or "/plugins/MineProtect" in path:
-        r = {"3306":"3308"} if args.direction == PUSH else {"3308":"3306"}
+        # CoreProtect/Mineprotect MUST end up as 3308 in Prod, 3307 in Staging. This new replacement dict handles dry-run and live run.
+        r = {"3306":"3308","3307":"3308"} if args.direction == PUSH else {"3306":"3307","3308":"3307"}
+
         process_config_file(args, path, r, exempt_paths, check_server, log_server)
     
 
