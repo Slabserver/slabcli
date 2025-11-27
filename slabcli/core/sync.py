@@ -246,7 +246,6 @@ def update_config_files(args, source_servers, dest_servers, replacements, exempt
  #TODO: remove this horrible edge case for CoreProtect/MineProtect in the future
 def update_coreprotect_config_files(args, path, replacements, exempt_paths, check_server, log_server):
     if "/plugins/CoreProtect" in path or "/plugins/MineProtect" in path:
-        print(clifmt.WHITE + f"{print_prefix}Coreprotect/Mineprotect file found: " + path)
         r = {"3306":"3308"} if args.direction == PUSH else {"3308":"3306"}
         process_config_file(args, path, r, exempt_paths, check_server, log_server)
     
