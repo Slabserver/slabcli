@@ -234,6 +234,7 @@ def update_config_files(args, source_servers, dest_servers, replacements, exempt
 
                     if coreprotect_edge_case:
                         update_coreprotect_config_files(args, path, replacements, exempt_paths, servers_to_check[server_name], servers_to_log[server_name])
+                        count += 1
                     else:
                         # Attempt to process the file; increment count if it changed
                         if process_config_file(args, path, replacements, exempt_paths, servers_to_check[server_name], servers_to_log[server_name]):
