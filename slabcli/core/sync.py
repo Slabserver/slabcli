@@ -213,7 +213,6 @@ def update_config_files(args, source_servers, dest_servers, replacements, exempt
     if coreprotect_edge_case:
         print(clifmt.WHITE + f"{print_prefix}Looping again to handle Coreprotect/Mineprotect edge case... please fix these ports in the future...")
 
-
     print(clifmt.WHITE + f"{print_prefix}Updating config files...")
     count = 0  # Track how many files were (or would be) updated
     f = "files" if count != 1 else "file" # Setup ternary vars for print
