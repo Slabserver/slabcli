@@ -71,7 +71,12 @@ def run(args, cfg):
         sync_server_files(args, cfg, source_servers, dest_servers, exempt_paths)
 
     # Step 3: Update server config files with any replacements
-    update_config_files(args, source_servers, dest_servers, replacements, exempt_paths)
+    update_config_files(args, source_servers, dest_servers, replacements, exempt_paths, False)
+
+    # Step 3.5 Update CoreProtect / MineProtect config files, to handle an unfortunate port issue we created
+    # The Staging port '3307' maps to '3306' in Production *except* for Coreprotect/Mineprotect, which uses '3308'
+    # This should be fixed in the future, and makes Marine very sad for it breaking the "Prod is Staging" philosophy.
+    update_config_files(args, source_servers, dest_servers, replacements, exempt_paths, True)
 
     # Step 4: Log or persist the timestamp of this sync operation
     if should_sync:
@@ -202,8 +207,12 @@ def clear_directory_push(args, name, directory, push_paths, push_files):
                     os.remove(path)
 
 
-def update_config_files(args, source_servers, dest_servers, replacements, exempt_paths):
+def update_config_files(args, source_servers, dest_servers, replacements, exempt_paths, coreprotect_edge_case: bool):
     """Apply replacements to config files in destination folders."""
+
+    if coreprotect_edge_case:
+        print(clifmt.WHITE + f"{print_prefix}Looping again to handle Coreprotect/Mineprotect edge case... please fix this...")
+
 
     print(clifmt.WHITE + f"{print_prefix}Updating config files...")
     count = 0  # Track how many files were (or would be) updated
@@ -221,16 +230,26 @@ def update_config_files(args, source_servers, dest_servers, replacements, exempt
         # Walk through all directories and files within the server path
         for root, dirs, files in os.walk(PTERO_ROOT + servers_to_check[server_name]):
             for filename in files:
-                if filename.endswith((".conf", ".txt, .properties", ".yml", "yaml")):
+                if filename.endswith((".conf", ".txt", ".properties", ".yml", "yaml")):
                     path = os.path.join(root, filename)
-                    # Attempt to process the file; increment count if it changed
-                    if process_config_file(args, path, replacements, exempt_paths, servers_to_check[server_name], servers_to_log[server_name]):
-                        count += 1
 
+                    if coreprotect_edge_case:
+                        update_coreprotect_config_files(args, path, replacements, exempt_paths, servers_to_check[server_name], servers_to_log[server_name])
+                    else:
+                        # Attempt to process the file; increment count if it changed
+                        if process_config_file(args, path, replacements, exempt_paths, servers_to_check[server_name], servers_to_log[server_name]):
+                            count += 1
 
     # Summarize number of files updated or that would be updated
     print(f"{clicolor}{print_prefix}Updated " + f"{count} " + f)
 
+ #TODO: remove this horrible edge case for CoreProtect/MineProtect in the future
+def update_coreprotect_config_files(args, path, replacements, exempt_paths, check_server, log_server):
+    if "/plugins/CoreProtect" in path or "/plugins/MineProtect" in path:
+        print(clifmt.WHITE + f"{print_prefix}Coreprotect/Mineprotect file found: " + path)
+        r = {"3306":"3308"} if args.direction == PUSH else {"3308":"3306"}
+        process_config_file(args, path, r, exempt_paths, check_server, log_server)
+    
 
 def process_config_file(args, path, replacements, exempt_paths, check_server, log_server):
     """Apply replacements to a config file if changes are needed."""
