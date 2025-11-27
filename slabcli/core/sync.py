@@ -211,7 +211,7 @@ def update_config_files(args, source_servers, dest_servers, replacements, exempt
     """Apply replacements to config files in destination folders."""
 
     if coreprotect_edge_case:
-        print(clifmt.LIGHT_RED + f"{print_prefix}Looping again to handle Coreprotect/Mineprotect edge case... please fix these ports in the future...")
+        print(clifmt.BROWN + f"{print_prefix}Looping again to handle Coreprotect/Mineprotect edge case... please fix these ports in the future...")
 
     print(clifmt.WHITE + f"{print_prefix}Updating config files...")
     count = 0  # Track how many files were (or would be) updated
@@ -233,8 +233,8 @@ def update_config_files(args, source_servers, dest_servers, replacements, exempt
                     path = os.path.join(root, filename)
 
                     if coreprotect_edge_case:
-                        update_coreprotect_config_files(args, path, replacements, exempt_paths, servers_to_check[server_name], servers_to_log[server_name])
-                        count += 1
+                        if update_coreprotect_config_files(args, path, replacements, exempt_paths, servers_to_check[server_name], servers_to_log[server_name]):
+                            count += 1
                     else:
                         # Attempt to process the file; increment count if it changed
                         if process_config_file(args, path, replacements, exempt_paths, servers_to_check[server_name], servers_to_log[server_name]):
@@ -246,10 +246,10 @@ def update_config_files(args, source_servers, dest_servers, replacements, exempt
  #TODO: remove this horrible edge case for CoreProtect/MineProtect in the future
 def update_coreprotect_config_files(args, path, replacements, exempt_paths, check_server, log_server):
     if "/plugins/CoreProtect" in path or "/plugins/MineProtect" in path:
-        # CoreProtect/Mineprotect MUST end up as 3308 in Prod, 3307 in Staging. This new replacement dict handles dry-run and live run.
+        # CoreProtect/Mineprotect MUST end up as 3308 in Prod, 3307 in Staging. This new replacement dict handles dry-run and a real run.
         r = {"3306":"3308","3307":"3308"} if args.direction == PUSH else {"3306":"3307","3308":"3307"}
-
-        process_config_file(args, path, r, exempt_paths, check_server, log_server)
+        if process_config_file(args, path, r, exempt_paths, check_server, log_server): return True
+        else: return False
     
 
 def process_config_file(args, path, replacements, exempt_paths, check_server, log_server):
