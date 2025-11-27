@@ -211,7 +211,7 @@ def update_config_files(args, source_servers, dest_servers, replacements, exempt
     """Apply replacements to config files in destination folders."""
 
     if coreprotect_edge_case:
-        print(clifmt.WHITE + f"{print_prefix}Looping again to handle Coreprotect/Mineprotect edge case... please fix this...")
+        print(clifmt.WHITE + f"{print_prefix}Looping again to handle Coreprotect/Mineprotect edge case... please fix this port in the future...")
 
 
     print(clifmt.WHITE + f"{print_prefix}Updating config files...")
