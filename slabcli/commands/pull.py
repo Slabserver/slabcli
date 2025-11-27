@@ -9,8 +9,8 @@ from slabcli.core.ptero import restart_servers, are_servers_at_state
 
 
 def add_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument('--update-only' '-u', action='store_true', help='pull the config changes only, with no copying of files at all')
-    parser.add_argument('--force-reset', action='store_true', help='force Staging to be reset by Production even if .jar files differ')
+    parser.add_argument('--update-only', '-u', action='store_true', help='pull the config changes only, with no copying of files at all')
+    parser.add_argument('--force-reset', '-f', action='store_true', help='force Staging to be reset by Production even if .jar files differ')
     parser.add_argument('--dry-run', '-y', action='store_true', help='skip prompts, and only show which changes would be pulled to Staging. Useful for writing to log files.')
 
 def run(args):

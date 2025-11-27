@@ -5,7 +5,7 @@ from slabcli.common.cli import clifmt, abort_cli
 from datetime import datetime, timezone
 
 def add_arguments(parser):
-    parser.add_argument('--update-only', action='store_true', help='push the config changes only, with no copying of files at all')
+    parser.add_argument('--update-only', '-u', action='store_true', help='push the config changes only, with no copying of files at all')
     parser.add_argument('--dry-run', '-y', action='store_true', help='skip prompts, and only show which changes would be pushed to Production. Useful for writing to log files.')
 
 def run(args):
