@@ -114,7 +114,7 @@ def sync_pull(args, cfg, name, source_server_root, dest_server_root, exempt_pull
     if should_sync:
         shutil.copytree(source_server_root, dest_server_root, dirs_exist_ok=True, ignore=exempt_pull_paths)
     else:
-        print_directory_contents(source_server_root)
+        print_directory_contents(source_server_root, exempt_pull_paths)
 
     # Cosmetic change for Staging, substitute the server icon to differentiate them in Minecraft's server browser
     stage_icon = os.path.join(dest_server_root, "server-icon-staging.png")
@@ -171,7 +171,7 @@ def clear_directory_pull(args, directory, name):
     rel_base = directory.removeprefix(PTERO_ROOT)
 
     print(f"{print_prefix}Deleting entire contents of {SERVER_TYPE[args.direction]}{name}: {rel_base}")
-    print_directory_contents(directory)
+    print_directory_contents(directory, []) # show contents that will be deleted
 
     if should_sync:
         for item in os.listdir(directory):
