@@ -112,7 +112,7 @@ def sync_pull(args, cfg, name, source_server_root, dest_server_root, exempt_pull
     print(f"{print_prefix}Recursively copying SMP {name} directory to {SERVER_TYPE[args.direction]}{name}: "
           f"{source_server_root.removeprefix(PTERO_ROOT)} -> {dest_server_root.removeprefix(PTERO_ROOT)}")
     if should_sync:
-        shutil.copytree(source_server_root, dest_server_root, dirs_exist_ok=True, ignore=exempt_pull_paths)
+        shutil.copytree(source_server_root, dest_server_root, dirs_exist_ok=True, ignore=shutil.ignore_patterns(*exempt_pull_paths))
     else:
         print_directory_contents(source_server_root, exempt_pull_paths)
 
