@@ -75,10 +75,12 @@ def jar_files_match(cfg):
         staging_jar = f"{jar_prefix}{staging_id}{jar_name}"
 
         # Check file existence
-        if not os.path.exists(prod_jar) or not os.path.exists(staging_jar):
-            print(f"Missing jar for {server}: {prod_jar} or {staging_jar}")
+        if not os.path.exists(prod_jar): 
+            print(f"Missing jar for {server}: {prod_jar})")
             return False
-
+        if not os.path.exists(staging_jar):
+            print(f"Missing jar for {server}: {staging_jar})")
+            return False
         if not files_match(prod_jar, staging_jar):
             return False
     return True
