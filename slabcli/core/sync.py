@@ -101,18 +101,18 @@ def sync_server_files(args, cfg, source_servers, dest_servers, exempt_paths):
             raise FileNotFoundError(f"Destination path does not exist: {dest_server_root}")
 
         if args.direction == PULL:
-            sync_pull(args, cfg, name, source_server_root, dest_server_root)
+            sync_pull(args, cfg, name, source_server_root, dest_server_root, exempt_paths)
         elif args.direction == PUSH:
             sync_push(args, cfg, name, source_server_root, dest_server_root, exempt_paths)
 
-def sync_pull(args, cfg, name, source_server_root, dest_server_root):
+def sync_pull(args, cfg, name, source_server_root, dest_server_root, exempt_pull_paths):
     """Sync an entire server directory from source to destination for PULL direction."""
     clear_directory_pull(args, dest_server_root, name)
 
     print(f"{print_prefix}Recursively copying SMP {name} directory to {SERVER_TYPE[args.direction]}{name}: "
           f"{source_server_root.removeprefix(PTERO_ROOT)} -> {dest_server_root.removeprefix(PTERO_ROOT)}")
     if should_sync:
-        shutil.copytree(source_server_root, dest_server_root, dirs_exist_ok=True)
+        shutil.copytree(source_server_root, dest_server_root, dirs_exist_ok=True, ignore=exempt_pull_paths)
     else:
         print_directory_contents(source_server_root)
 
