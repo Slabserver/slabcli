@@ -243,7 +243,7 @@ def update_config_files(args, source_servers, dest_servers, replacements, exempt
     # Summarize number of files updated or that would be updated
     print(f"{clicolor}{print_prefix}Updated " + f"{count} " + f)
 
- #TODO: remove this horrible edge case for CoreProtect/MineProtect in the future
+#TODO: remove this horrible edge case for CoreProtect/MineProtect in the future
 def update_coreprotect_config_files(args, path, replacements, exempt_paths, check_server, log_server):
     if "/plugins/CoreProtect" in path or "/plugins/MineProtect" in path:
         # CoreProtect/Mineprotect MUST end up as 3308 in Prod, 3307 in Staging. This new replacement dict handles dry-run and a real run.
