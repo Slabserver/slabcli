@@ -201,7 +201,7 @@ def clear_directory_push(args, name, directory, push_paths, push_files):
         for file in files:
             path = os.path.join(root, file)
             is_plugins_folder = root.rstrip("/\\").endswith("/plugins")
-            if substring_in_string(push_files, path) or (is_plugins_folder and file.lower().endswith(".jar")):
+            if substring_in_string(push_files, path) or (is_plugins_folder and file.lower().endswith((".jar", ".old"))):
                 print(f"{print_prefix}Deleting file: {path.removeprefix(PTERO_ROOT)}")
                 if should_sync:
                     os.remove(path)
